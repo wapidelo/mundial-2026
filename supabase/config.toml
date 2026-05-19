@@ -17,7 +17,7 @@ major_version = 17
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
+site_url = "https://mundial-2026-beta.vercel.app"
 additional_redirect_urls = [
   "http://localhost:3000/auth/callback",
   "http://localhost:3001/auth/callback",
@@ -27,6 +27,10 @@ additional_redirect_urls = [
   "http://localhost:3001",
   "http://localhost:3002",
   "http://localhost:3003",
+  "https://mundial-2026-beta.vercel.app/auth/callback",
+  "https://mundial-2026-beta.vercel.app",
+  "https://mundial-2026-wapidelos-projects.vercel.app/auth/callback",
+  "https://mundial-2026-wapidelos-projects.vercel.app",
   "https://*.vercel.app/auth/callback",
   "https://*.vercel.app"
 ]
