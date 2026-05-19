@@ -80,3 +80,20 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   opacity: 1;
 }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scoreFlash {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.18); color: #34d399; }
+  60%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}

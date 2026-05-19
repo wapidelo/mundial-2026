@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Nav } from "@/components/nav"
+import { PageFadeIn } from "@/components/page-fade-in"
 
 export default async function MainLayout({
   children,
@@ -25,7 +26,7 @@ export default async function MainLayout({
     <div className="min-h-screen flex flex-col">
       <Nav displayName={displayName} isAdmin={isAdmin} />
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
-        {children}
+        <PageFadeIn>{children}</PageFadeIn>
       </main>
     </div>
   )

@@ -81,7 +81,7 @@ export function LeaderboardRealtime({
               <div
                 key={entry.user_id}
                 className={cn(
-                  "rounded-xl border px-5 py-4 flex items-center gap-4 transition-all duration-500",
+                  "rounded-xl border px-5 py-4 flex items-center gap-4 transition-all duration-500 hover:scale-[1.01] hover:shadow-lg cursor-default",
                   isMe ? "border-primary/40 bg-primary/10" : "border-border/20 bg-foreground/[0.02]",
                   rank <= 3 && "border-yellow-500/20 bg-yellow-500/5",
                   flash && "ring-1 ring-emerald-500/30",

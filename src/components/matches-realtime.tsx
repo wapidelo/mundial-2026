@@ -134,10 +134,10 @@ export function MatchesRealtime({
                       {/* Score */}
                       <div className="shrink-0 w-24 text-center">
                         {isFinished ? (
-                          <span className={cn(
-                            "text-2xl font-black font-mono text-foreground transition-all duration-500",
-                            isFlashing && "text-emerald-400 scale-110",
-                          )}>
+                          <span
+                            className="text-2xl font-black font-mono text-foreground"
+                            style={isFlashing ? { animation: "scoreFlash 0.6s ease-out", color: "#34d399" } : undefined}
+                          >
                             {match.home_score} — {match.away_score}
                           </span>
                         ) : (

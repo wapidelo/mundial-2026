@@ -11,6 +11,7 @@ const links = [
   { href: "/predictions", label: "🎯 Predicciones" },
   { href: "/leaderboard", label: "🏆 Posiciones" },
   { href: "/matches", label: "⚽ Partidos" },
+  { href: "/estadisticas", label: "📊 Estadísticas" },
 ]
 
 function ThemeToggle() {
