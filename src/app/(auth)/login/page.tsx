@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { checkEmailExists } from "@/lib/actions/profile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -34,20 +35,45 @@ const FLAGS = [
   { f: "🇨🇷", x: 25, y: 95, d: 2.6,  dur: 3.9 },
 ]
 
+type Step = "email" | "new_user" | "returning"
+
 export default function LoginPage() {
+  const [step, setStep] = useState<Step>("email")
   const [email, setEmail] = useState("")
+  const [name, setName] = useState("")
+  const [returnName, setReturnName] = useState("")
+  const [checking, setChecking] = useState(false)
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleEmailSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setChecking(true)
+    try {
+      const result = await checkEmailExists(email)
+      if (result.exists) {
+        setReturnName(result.name ?? "")
+        setStep("returning")
+      } else {
+        setStep("new_user")
+      }
+    } catch {
+      toast.error("Error al verificar el correo")
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  async function handleSendLink(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     const supabase = createClient()
+    const displayName = step === "new_user" ? name.trim() : returnName
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        data: { display_name: email.split("@")[0] },
+        data: displayName ? { display_name: displayName } : undefined,
       },
     })
     setLoading(false)
@@ -57,6 +83,8 @@ export default function LoginPage() {
       setSent(true)
     }
   }
+
+  const activeName = step === "returning" ? returnName : name.trim()
 
   return (
     <>
@@ -160,9 +188,7 @@ export default function LoginPage() {
               <div
                 key={host.name}
                 className="flex flex-col items-center gap-0.5"
-                style={{
-                  animation: `hostPop 0.5s ease ${0.4 + i * 0.12}s both`,
-                }}
+                style={{ animation: `hostPop 0.5s ease ${0.4 + i * 0.12}s both` }}
               >
                 <span style={{ fontSize: "1.6rem" }}>{host.flag}</span>
                 <span className="text-[10px] text-slate-500 font-medium tracking-wide">{host.name}</span>
@@ -180,27 +206,32 @@ export default function LoginPage() {
             className="rounded-2xl border border-white/10 p-8"
             style={{ background: "rgba(10,15,30,0.85)", backdropFilter: "blur(16px)" }}
           >
+            {/* ── Sent confirmation ── */}
             {sent ? (
               <div className="text-center" style={{ animation: "fadeUp 0.4s ease both" }}>
                 <div style={{ fontSize: "2.5rem", animation: "hostPop 0.5s ease both" }}>📧</div>
-                <h2 className="text-xl font-semibold text-white mt-3 mb-2">¡Revisa tu correo!</h2>
+                <h2 className="text-xl font-semibold text-white mt-3 mb-2">
+                  {activeName ? `¡Hola, ${activeName}!` : "¡Revisa tu correo!"}
+                </h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   Enviamos un enlace mágico a{" "}
                   <span className="text-white font-medium">{email}</span>.
                   Haz clic en él para ingresar.
                 </p>
                 <button
-                  onClick={() => setSent(false)}
+                  onClick={() => { setSent(false); setStep("email") }}
                   className="mt-5 text-sm text-slate-500 hover:text-slate-300 underline transition-colors"
                 >
                   Usar otro correo
                 </button>
               </div>
-            ) : (
+
+            ) : step === "email" ? (
+              /* ── Step 1: Email ── */
               <>
                 <h2 className="text-xl font-semibold text-white mb-1">Ingresar</h2>
                 <p className="text-slate-400 text-sm mb-6">Te enviaremos un enlace mágico a tu correo</p>
-                <form onSubmit={handleLogin} className="space-y-4">
+                <form onSubmit={handleEmailSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-slate-300 text-sm">
                       Correo electrónico
@@ -212,19 +243,89 @@ export default function LoginPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      autoFocus
                       className="bg-white/5 border-white/15 text-white placeholder:text-slate-600 focus:border-red-700 focus:ring-red-700/20 h-11"
                     />
                   </div>
                   <Button
                     type="submit"
-                    disabled={loading}
-                    className="w-full h-11 font-semibold text-white tracking-wide transition-opacity"
+                    disabled={checking}
+                    className="w-full h-11 font-semibold text-white tracking-wide"
                     style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
                   >
-                    {loading ? "Enviando..." : "Entrar a la quiniela →"}
+                    {checking ? "Verificando..." : "Continuar →"}
                   </Button>
                 </form>
               </>
+
+            ) : step === "new_user" ? (
+              /* ── Step 2a: New user — ask name ── */
+              <form onSubmit={handleSendLink} className="space-y-4" style={{ animation: "fadeUp 0.35s ease both" }}>
+                <div className="text-center mb-2">
+                  <div style={{ fontSize: "1.8rem" }}>✨</div>
+                  <h2 className="text-xl font-semibold text-white mt-2 mb-1">¡Bienvenido/a!</h2>
+                  <p className="text-slate-400 text-sm">Es tu primera vez. ¿Cómo te llamamos?</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-slate-300 text-sm">Tu nombre</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    placeholder="Ej. Carlos Ramos"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    autoFocus
+                    autoComplete="name"
+                    className="bg-white/5 border-white/15 text-white placeholder:text-slate-600 focus:border-red-700 h-11"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading || !name.trim()}
+                  className="w-full h-11 font-semibold text-white tracking-wide"
+                  style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+                >
+                  {loading ? "Enviando..." : "Entrar a la quiniela →"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setStep("email")}
+                  className="w-full text-sm text-slate-500 hover:text-slate-300 underline transition-colors"
+                >
+                  ← Cambiar correo
+                </button>
+              </form>
+
+            ) : (
+              /* ── Step 2b: Returning user ── */
+              <form onSubmit={handleSendLink} className="space-y-4" style={{ animation: "fadeUp 0.35s ease both" }}>
+                <div className="text-center mb-2">
+                  <div style={{ fontSize: "1.8rem" }}>👋</div>
+                  <h2 className="text-xl font-semibold text-white mt-2 mb-1">
+                    ¡Hola de nuevo{returnName ? `, ${returnName}` : ""}!
+                  </h2>
+                  <p className="text-slate-400 text-sm">
+                    Te enviamos el enlace a{" "}
+                    <span className="text-white font-medium">{email}</span>
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-11 font-semibold text-white tracking-wide"
+                  style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+                >
+                  {loading ? "Enviando..." : "Enviar enlace →"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setStep("email")}
+                  className="w-full text-sm text-slate-500 hover:text-slate-300 underline transition-colors"
+                >
+                  ← No soy yo
+                </button>
+              </form>
             )}
           </div>
 

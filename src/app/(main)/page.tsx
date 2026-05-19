@@ -1,8 +1,10 @@
+import { Suspense } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import { Countdown } from "@/components/countdown"
 import { AnimatedNumber } from "@/components/animated-number"
+import { WelcomeToast } from "@/components/welcome-toast"
 
 export default async function HomePage() {
   const supabase = await createClient()
@@ -17,6 +19,9 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col items-center gap-6">
+      <Suspense fallback={null}>
+        <WelcomeToast />
+      </Suspense>
 
       {/* ── Hero ───────────────────────────────────────── */}
       <div className="w-full rounded-2xl overflow-hidden relative"

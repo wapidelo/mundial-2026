@@ -6,6 +6,7 @@ import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
+import { ProfileModal } from "@/components/profile-modal"
 
 const navLinks = [
   { href: "/predictions", emoji: "🎯", text: "Quiniela" },
@@ -55,6 +56,7 @@ export function Nav({
   const pathname = usePathname()
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   // Close menu on route change
   useEffect(() => {
@@ -70,6 +72,12 @@ export function Nav({
 
   return (
     <>
+      <ProfileModal
+        currentName={displayName}
+        open={profileOpen}
+        onClose={() => setProfileOpen(false)}
+      />
+
       {/* Top bar */}
       <nav className="sticky top-0 z-50 border-b border-foreground/10 bg-background/95 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 flex items-center gap-3 h-14">
@@ -119,15 +127,21 @@ export function Nav({
           <div className="flex items-center gap-2 shrink-0">
             <ThemeToggle />
             <div className="hidden sm:flex items-center gap-2">
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+              <button
+                onClick={() => setProfileOpen(true)}
+                title="Editar nombre"
+                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-foreground/5 transition-colors group"
               >
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-sm text-muted-foreground max-w-[120px] truncate">
-                {displayName}
-              </span>
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                  style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+                >
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm text-muted-foreground group-hover:text-foreground max-w-[120px] truncate transition-colors">
+                  {displayName}
+                </span>
+              </button>
             </div>
             <button
               onClick={handleLogout}
@@ -183,15 +197,21 @@ export function Nav({
                 </Link>
               )}
               <div className="border-t border-foreground/10 mt-1 pt-2 flex items-center justify-between">
-                <div className="flex items-center gap-2 px-3">
+                <button
+                  onClick={() => { setMenuOpen(false); setProfileOpen(true) }}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-foreground/5 transition-colors group"
+                >
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
                     style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
                   >
                     {displayName.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-xs text-muted-foreground truncate max-w-[150px]">{displayName}</span>
-                </div>
+                  <span className="text-xs text-muted-foreground group-hover:text-foreground truncate max-w-[150px] transition-colors">
+                    {displayName}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground/50 group-hover:text-muted-foreground transition-colors">✏️</span>
+                </button>
                 <button
                   onClick={handleLogout}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-foreground/5"
