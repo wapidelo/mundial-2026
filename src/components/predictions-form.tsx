@@ -73,6 +73,7 @@ function ExcelUploadSection({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showInstructions, setShowInstructions] = useState(false)
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -86,13 +87,13 @@ function ExcelUploadSection({
       const parsed = await parseExcelFile(file, matchNumberToId)
       const count = Object.keys(parsed).length
       if (count === 0) {
-        toast.error("No se encontraron predicciones válidas en el archivo")
+        toast.error("No se encontraron predicciones válidas. Revisa que el archivo sea la plantilla correcta.")
       } else {
         onImport(parsed)
-        toast.success(`${count} predicciones importadas desde Excel`)
+        toast.success(`✅ ${count} predicciones importadas — revisa y confirma antes de guardar`)
       }
     } catch {
-      toast.error("Error al leer el archivo Excel")
+      toast.error("No se pudo leer el archivo. Asegúrate de subir un .xlsx válido.")
     } finally {
       setIsLoading(false)
       if (fileInputRef.current) fileInputRef.current.value = ""
@@ -112,29 +113,134 @@ function ExcelUploadSection({
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".xlsx,.xls"
-        className="hidden"
-        onChange={handleFile}
-      />
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        disabled={isLoading}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-border/30 text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors disabled:opacity-50"
-      >
-        📊 {isLoading ? "Importando..." : "Importar desde Excel"}
-      </button>
-      <button
-        type="button"
-        onClick={handleDownloadTemplate}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-border/30 text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
-      >
-        ⬇️ Descargar plantilla
-      </button>
+    <div className="rounded-xl border border-border/20 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3"
+        style={{ background: "rgba(99,102,241,0.06)", borderBottom: showInstructions ? "1px solid rgba(99,102,241,0.15)" : undefined }}>
+        <div className="flex items-center gap-2">
+          <span className="text-lg">📊</span>
+          <div>
+            <p className="text-sm font-semibold text-foreground leading-tight">Importar desde Excel</p>
+            <p className="text-xs text-muted-foreground">Llena tus 72 predicciones de un jalón</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowInstructions((v) => !v)}
+          className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium flex items-center gap-1"
+        >
+          {showInstructions ? "Ocultar" : "¿Cómo funciona?"}{" "}
+          <span className="text-base leading-none">{showInstructions ? "▴" : "▾"}</span>
+        </button>
+      </div>
+
+      {/* Instructions panel */}
+      {showInstructions && (
+        <div className="px-4 py-4 space-y-4 border-b border-border/20"
+          style={{ background: "rgba(99,102,241,0.03)" }}>
+
+          {/* Steps */}
+          <ol className="space-y-2.5">
+            {[
+              { n: "1", icon: "⬇️", text: <>Descarga la <strong className="text-foreground">plantilla de Excel</strong> con los 72 partidos ya cargados.</> },
+              { n: "2", icon: "✏️", text: <>Rellena solo las columnas <strong className="text-foreground">Goles Local</strong> y <strong className="text-foreground">Goles Visitante</strong> con números enteros (0–99).</> },
+              { n: "3", icon: "📂", text: <>Guarda el archivo y sube el <strong className="text-foreground">.xlsx</strong> con el botón de abajo.</> },
+              { n: "4", icon: "👀", text: <>Los marcadores aparecerán en el formulario. <strong className="text-foreground">Revísalos</strong> y luego haz clic en "Guardar".</> },
+            ].map(({ n, icon, text }) => (
+              <li key={n} className="flex items-start gap-3">
+                <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                  style={{ background: "rgba(99,102,241,0.2)", color: "#818cf8" }}>
+                  {n}
+                </span>
+                <span className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="mr-1">{icon}</span>{text}
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          {/* Column reference table */}
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+              Formato de la plantilla
+            </p>
+            <div className="overflow-hidden rounded-lg border border-border/30">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ background: "rgba(255,255,255,0.04)" }}>
+                    {["Col A — #", "Col B — Local", "Col C — Visitante", "Col D — Goles Local ✏️", "Col E — Goles Visitante ✏️"].map((h) => (
+                      <th key={h} className="px-2 py-2 text-left font-semibold text-muted-foreground border-b border-border/20"
+                        style={h.includes("✏️") ? { color: "#a5b4fc" } : undefined}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["1", "México", "Islandia", "2", "0"],
+                    ["2", "Ecuador", "Mali", "1", "1"],
+                    ["3", "EUA", "Serbia", "", ""],
+                  ].map((row, i) => (
+                    <tr key={i} style={{ background: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}>
+                      {row.map((cell, j) => (
+                        <td key={j} className="px-2 py-1.5 border-b border-border/10 font-mono"
+                          style={{ color: j >= 3 ? (cell ? "#a5b4fc" : "#374151") : "#94a3b8" }}>
+                          {cell || <span className="opacity-30">–</span>}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1.5">
+              💡 Las columnas A, B y C ya vienen llenas. Solo escribe en D y E.
+            </p>
+          </div>
+
+          {/* Warning */}
+          <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 px-3 py-2.5"
+            style={{ background: "rgba(245,158,11,0.05)" }}>
+            <span className="text-sm shrink-0">⚠️</span>
+            <p className="text-xs text-amber-600 dark:text-amber-400 leading-relaxed">
+              La importación <strong>no guarda</strong> automáticamente. Después de importar, haz clic en
+              <strong> "Guardar todas las predicciones"</strong> para confirmar y bloquearlas.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex gap-2 p-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".xlsx,.xls"
+          className="hidden"
+          onChange={handleFile}
+        />
+        <button
+          type="button"
+          onClick={handleDownloadTemplate}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-border/30 text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+        >
+          ⬇️ Descargar plantilla
+        </button>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isLoading}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border transition-colors disabled:opacity-50"
+          style={{ background: "rgba(99,102,241,0.15)", color: "#a5b4fc", borderColor: "rgba(99,102,241,0.3)" }}
+        >
+          {isLoading ? (
+            <><span className="animate-spin">⟳</span> Importando...</>
+          ) : (
+            <>📂 Subir archivo .xlsx</>
+          )}
+        </button>
+      </div>
     </div>
   )
 }
