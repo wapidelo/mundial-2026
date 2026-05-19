@@ -1,12 +1,13 @@
 "use client"
 
-import { useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
 import { savePredictions, saveBonusPredictions } from "@/lib/actions/predictions"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { pointsColor, pointsLabel } from "@/lib/scoring"
-import type { GroupWithMatches, Prediction, BonusPrediction, Team } from "@/lib/types"
+import { calculateMatchPoints, pointsColor, pointsLabel } from "@/lib/scoring"
+import type { GroupWithMatches, Match, Prediction, BonusPrediction, Team } from "@/lib/types"
 
 // ─── Confirmation Dialog ─────────────────────────────────────────────────────
 
@@ -538,12 +539,14 @@ export function PredictionsForm({
   bonusPrediction,
   allTeams,
   isClosed,
+  userId,
 }: {
   groupsWithMatches: GroupWithMatches[]
   predictionMap: Record<number, Prediction>
   bonusPrediction: BonusPrediction | null
   allTeams: Team[]
   isClosed: boolean
+  userId: string
 }) {
   const formRef = useRef<HTMLFormElement>(null)
   const [isPending, startTransition] = useTransition()
@@ -552,6 +555,36 @@ export function PredictionsForm({
   const [newPredCount, setNewPredCount] = useState(0)
   const [importedPredictions, setImportedPredictions] = useState<Record<number, { home: number; away: number }>>({})
   const [importKey, setImportKey] = useState(0)
+
+  useEffect(() => {
+    if (!userId) return
+    const supabase = createClient()
+    const predMap = predictionMap
+
+    const channel = supabase
+      .channel("predictions-results")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "matches" },
+        (payload) => {
+          const match = payload.new as Match
+          if (match.home_score === null || match.away_score === null) return
+          const pred = predMap[match.id]
+          if (!pred) return
+          const pts = calculateMatchPoints(
+            { home: pred.predicted_home_score, away: pred.predicted_away_score },
+            { home: match.home_score, away: match.away_score },
+          )
+          toast.success(
+            `⚽ Resultado: ${match.home_score} — ${match.away_score} · ${pointsLabel(pts)}`,
+            { duration: 8000 },
+          )
+        },
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function countNewPredictions(fd: FormData): number {
     let count = 0

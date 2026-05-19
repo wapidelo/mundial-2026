@@ -73,6 +73,7 @@ export default async function PredictionsPage() {
         bonusPrediction={bonusPred ?? null}
         allTeams={(teams ?? []) as Team[]}
         isClosed={isClosed}
+        userId={user!.id}
       />
     </div>
   )
