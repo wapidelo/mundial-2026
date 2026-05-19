@@ -25,7 +25,7 @@ export default async function MainLayout({
   return (
     <div className="min-h-screen flex flex-col">
       <Nav displayName={displayName} isAdmin={isAdmin} />
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 pt-6 pb-24 sm:pb-8">
         <PageFadeIn>{children}</PageFadeIn>
       </main>
     </div>

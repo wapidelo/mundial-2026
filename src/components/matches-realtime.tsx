@@ -62,7 +62,7 @@ export function MatchesRealtime({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">⚽ Partidos</h1>
           <div className="flex items-center gap-1.5 mt-1">
@@ -76,31 +76,31 @@ export function MatchesRealtime({
           </div>
         </div>
         <div className="text-sm text-muted-foreground font-mono">
-          <span className="text-emerald-400 font-bold">{finished}</span>/{total} finalizados
+          <span className="text-emerald-400 font-bold">{finished}</span>/{total}
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {groups.map((group) => {
           const groupFinished = group.matches.filter((m) => m.status === "finished").length
           return (
             <details key={group.id} open className="rounded-xl border border-border/20 overflow-hidden">
               <summary
-                className="flex items-center justify-between px-5 py-3 cursor-pointer select-none list-none"
+                className="flex items-center justify-between px-4 py-2.5 cursor-pointer select-none list-none"
                 style={{ background: "rgba(30,41,59,0.3)", borderBottom: "1px solid rgba(255,255,255,0.05)" }}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-black text-foreground/30">GRUPO</span>
-                  <span className="text-3xl font-black text-foreground">{group.name}</span>
+                  <span className="text-sm font-black text-foreground/30">GRUPO</span>
+                  <span className="text-2xl font-black text-foreground">{group.name}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className={cn(
-                    "font-mono font-bold",
+                    "font-mono font-bold text-xs",
                     groupFinished === 6 ? "text-emerald-400" : "text-muted-foreground",
                   )}>
                     {groupFinished}/6
                   </span>
-                  <span className="text-muted-foreground">▾</span>
+                  <span className="text-muted-foreground text-xs">▾</span>
                 </div>
               </summary>
 
@@ -114,50 +114,56 @@ export function MatchesRealtime({
                     <div
                       key={match.id}
                       className={cn(
-                        "flex items-center gap-3 px-5 py-4 transition-colors duration-700",
+                        "px-4 py-3 transition-colors duration-700",
                         isFinished && "bg-emerald-500/5",
                         isFlashing && "bg-emerald-500/20",
                       )}
                     >
-                      {/* Date */}
-                      <div className="text-xs text-muted-foreground w-20 shrink-0 text-center">
-                        <div>{date.toLocaleDateString("es-MX", { day: "numeric", month: "short" })}</div>
-                        <div className="font-mono">{date.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}</div>
-                      </div>
-
-                      {/* Home */}
-                      <div className="flex-1 text-right">
-                        <span className="text-base mr-1">{match.home_team?.flag_emoji}</span>
-                        <span className="text-sm font-medium text-foreground">{match.home_team?.name}</span>
-                      </div>
-
-                      {/* Score */}
-                      <div className="shrink-0 w-24 text-center">
-                        {isFinished ? (
-                          <span
-                            className="text-2xl font-black font-mono text-foreground"
-                            style={isFlashing ? { animation: "scoreFlash 0.6s ease-out", color: "#34d399" } : undefined}
-                          >
-                            {match.home_score} — {match.away_score}
+                      {/* Teams + Score row */}
+                      <div className="flex items-center gap-2">
+                        {/* Home */}
+                        <div className="flex-1 flex items-center justify-end gap-1 min-w-0">
+                          <span className="text-sm font-medium text-foreground truncate text-right">
+                            {match.home_team?.name}
                           </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground/40 font-mono">vs</span>
-                        )}
+                          <span className="text-base shrink-0">{match.home_team?.flag_emoji}</span>
+                        </div>
+
+                        {/* Score */}
+                        <div className="shrink-0 w-20 text-center">
+                          {isFinished ? (
+                            <span
+                              className="text-xl font-black font-mono text-foreground"
+                              style={isFlashing ? { animation: "scoreFlash 0.6s ease-out", color: "#34d399" } : undefined}
+                            >
+                              {match.home_score}—{match.away_score}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/50 font-mono">vs</span>
+                          )}
+                        </div>
+
+                        {/* Away */}
+                        <div className="flex-1 flex items-center gap-1 min-w-0">
+                          <span className="text-base shrink-0">{match.away_team?.flag_emoji}</span>
+                          <span className="text-sm font-medium text-foreground truncate">
+                            {match.away_team?.name}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Away */}
-                      <div className="flex-1 text-left">
-                        <span className="text-sm font-medium text-foreground">{match.away_team?.name}</span>
-                        <span className="text-base ml-1">{match.away_team?.flag_emoji}</span>
-                      </div>
-
-                      {/* Status */}
-                      <div className="w-24 shrink-0 text-right">
+                      {/* Date + Status row */}
+                      <div className="flex items-center justify-between mt-1.5">
+                        <span className="text-[11px] text-muted-foreground font-mono">
+                          {date.toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                          {" · "}
+                          {date.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
                         <span className={cn(
-                          "text-xs font-semibold px-2 py-0.5 rounded-full",
+                          "text-[10px] font-semibold px-2 py-0.5 rounded-full",
                           isFinished
                             ? "bg-emerald-500/15 text-emerald-400"
-                            : "bg-foreground/5 text-muted-foreground",
+                            : "bg-foreground/5 text-muted-foreground/60",
                           isFlashing && "bg-emerald-500/30 text-emerald-300",
                         )}>
                           {isFlashing ? "¡Nuevo! 🎉" : isFinished ? "Finalizado" : "Por jugar"}

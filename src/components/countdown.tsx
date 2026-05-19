@@ -37,7 +37,7 @@ export function Countdown({ targetDate }: { targetDate: string }) {
 
   const units = [
     { label: "días", value: time.days },
-    { label: "horas", value: time.hours },
+    { label: "hrs", value: time.hours },
     { label: "min", value: time.minutes },
     { label: "seg", value: time.seconds },
   ]
@@ -45,18 +45,18 @@ export function Countdown({ targetDate }: { targetDate: string }) {
   return (
     <div className="flex flex-col items-center gap-2">
       <p className="text-sm text-slate-400">Faltan para el inicio</p>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {units.map((unit, i) => (
-          <div key={unit.label} className="flex items-center gap-3">
+          <div key={unit.label} className="flex items-center gap-2 sm:gap-3">
             <div className="flex flex-col items-center">
-              <div className="w-16 h-16 rounded-xl flex items-center justify-center font-mono text-2xl font-bold text-white"
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center font-mono text-xl sm:text-2xl font-bold text-white"
                 style={{ background: "rgba(139,26,47,0.3)", border: "1px solid rgba(139,26,47,0.5)" }}>
                 {String(unit.value).padStart(2, "0")}
               </div>
-              <span className="text-xs text-slate-500 mt-1">{unit.label}</span>
+              <span className="text-[10px] sm:text-xs text-slate-500 mt-1">{unit.label}</span>
             </div>
             {i < units.length - 1 && (
-              <span className="text-xl font-bold text-slate-600 mb-4">:</span>
+              <span className="text-lg font-bold text-slate-600 mb-4">:</span>
             )}
           </div>
         ))}

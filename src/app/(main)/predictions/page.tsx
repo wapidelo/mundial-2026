@@ -43,8 +43,8 @@ export default async function PredictionsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">🎯 Mis Predicciones</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-foreground">🎯 Mis Predicciones</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             {isClosed
               ? "Las predicciones están cerradas — el torneo ya comenzó"
               : `Predice los 72 partidos antes del 11 jun 2026`}
@@ -52,8 +52,8 @@ export default async function PredictionsPage() {
         </div>
         {!isClosed && (
           <div className="hidden md:flex items-center gap-2 text-sm">
-            <span className="text-slate-500">Predicciones:</span>
-            <span className="font-bold text-white font-mono">
+            <span className="text-muted-foreground">Predicciones:</span>
+            <span className="font-bold text-foreground font-mono">
               {predictions?.length ?? 0}
               <span className="text-slate-500">/72</span>
             </span>
@@ -62,7 +62,7 @@ export default async function PredictionsPage() {
       </div>
 
       {isClosed && (
-        <div className="mb-6 p-4 rounded-xl border border-yellow-800/50 bg-yellow-900/20 text-yellow-300 text-sm">
+        <div className="mb-6 p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 text-sm">
           🔒 Las predicciones cerraron el 11 de junio. Puedes ver tus predicciones pero ya no puedes modificarlas.
         </div>
       )}

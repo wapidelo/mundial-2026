@@ -41,7 +41,7 @@ export function AdminMatchRow({ match: initialMatch }: { match: MatchWithTeams }
         : "border-border/20 bg-foreground/[0.02] hover:bg-foreground/[0.04]",
       isPending && "opacity-60 pointer-events-none",
     )}>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <div className="text-xs text-muted-foreground w-14 shrink-0 text-center">
           <div className="font-mono">#{match.match_number}</div>
           <div>{new Date(match.scheduled_at).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit" })}</div>

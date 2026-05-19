@@ -22,7 +22,7 @@ export default async function HomePage() {
           background: "linear-gradient(135deg, #1a0a14 0%, #0a0f2e 40%, #0a1a0e 100%)",
           border: "1px solid rgba(255,255,255,0.08)"
         }}>
-        <div className="px-8 py-16 text-center relative z-10">
+        <div className="px-4 sm:px-8 py-10 sm:py-16 text-center relative z-10">
           <div className="text-7xl mb-4">🏆</div>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
             Quiniela

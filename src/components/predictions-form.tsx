@@ -165,7 +165,7 @@ function ExcelUploadSection({
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
               Formato de la plantilla
             </p>
-            <div className="overflow-hidden rounded-lg border border-border/30">
+            <div className="overflow-x-auto rounded-lg border border-border/30">
               <table className="w-full text-xs">
                 <thead>
                   <tr style={{ background: "rgba(255,255,255,0.04)" }}>

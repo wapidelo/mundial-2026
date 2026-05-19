@@ -81,24 +81,24 @@ export function LeaderboardRealtime({
               <div
                 key={entry.user_id}
                 className={cn(
-                  "rounded-xl border px-5 py-4 flex items-center gap-4 transition-all duration-500 hover:scale-[1.01] hover:shadow-lg cursor-default",
+                  "rounded-xl border px-3 sm:px-5 py-3 sm:py-4 flex items-center gap-3 sm:gap-4 transition-all duration-500 hover:scale-[1.01] hover:shadow-lg cursor-default",
                   isMe ? "border-primary/40 bg-primary/10" : "border-border/20 bg-foreground/[0.02]",
                   rank <= 3 && "border-yellow-500/20 bg-yellow-500/5",
                   flash && "ring-1 ring-emerald-500/30",
                 )}
               >
                 {/* Rank */}
-                <div className="w-10 text-center shrink-0">
+                <div className="w-7 sm:w-10 text-center shrink-0">
                   {typeof getMedalOrRank(rank) === "string" ? (
-                    <span className="text-2xl">{getMedalOrRank(rank)}</span>
+                    <span className="text-xl sm:text-2xl">{getMedalOrRank(rank)}</span>
                   ) : (
-                    <span className="text-xl font-bold text-muted-foreground">{getMedalOrRank(rank)}</span>
+                    <span className="text-base sm:text-xl font-bold text-muted-foreground">{getMedalOrRank(rank)}</span>
                   )}
                 </div>
 
                 {/* Avatar */}
                 <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
                   style={{
                     background: isMe
                       ? "linear-gradient(135deg, #8b1a2f, #c0392b)"
@@ -110,11 +110,11 @@ export function LeaderboardRealtime({
 
                 {/* Name + progress */}
                 <div className="flex-1 min-w-0">
-                  <p className={cn("font-semibold truncate text-foreground")}>
+                  <p className="font-semibold truncate text-foreground text-sm sm:text-base">
                     {entry.display_name}
                     {isMe && <span className="text-xs text-primary ml-1">(tú)</span>}
                   </p>
-                  <div className="mt-1.5 h-1.5 bg-foreground/10 rounded-full overflow-hidden max-w-xs">
+                  <div className="mt-1.5 h-1.5 bg-foreground/10 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-1000"
                       style={{
@@ -128,7 +128,7 @@ export function LeaderboardRealtime({
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center gap-6 shrink-0 text-right">
+                <div className="flex items-center gap-3 sm:gap-6 shrink-0 text-right">
                   <div className="hidden sm:block">
                     <div className="text-xs text-muted-foreground font-medium">Exactos</div>
                     <div className="text-sm font-bold text-emerald-400 font-mono text-center">
@@ -142,9 +142,9 @@ export function LeaderboardRealtime({
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground font-medium">Puntos</div>
+                    <div className="text-xs text-muted-foreground font-medium">Pts</div>
                     <div className={cn(
-                      "text-xl font-black font-mono transition-all duration-500",
+                      "text-lg sm:text-xl font-black font-mono transition-all duration-500",
                       rank === 1 ? "text-yellow-300" : isMe ? "text-foreground" : "text-foreground/80",
                     )}>
                       {entry.total_points}

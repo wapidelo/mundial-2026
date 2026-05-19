@@ -143,17 +143,17 @@ export default async function EstadisticasPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         {[
           { icon: "👥", label: "Participantes", value: totalParticipants },
-          { icon: "🎯", label: "Predicciones totales", value: totalPredictions },
-          { icon: "📈", label: "Promedio por usuario", value: totalParticipants > 0 ? Math.round(totalPredictions / totalParticipants) : 0 },
+          { icon: "🎯", label: "Predicciones", value: totalPredictions },
+          { icon: "📈", label: "Promedio", value: totalParticipants > 0 ? Math.round(totalPredictions / totalParticipants) : 0 },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-border/20 p-4 text-center"
+          <div key={s.label} className="rounded-xl border border-border/20 p-3 text-center"
             style={{ background: "rgba(255,255,255,0.02)" }}>
-            <div className="text-2xl mb-1">{s.icon}</div>
-            <div className="text-2xl font-black font-mono text-foreground">{s.value}</div>
-            <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
+            <div className="text-xl mb-1">{s.icon}</div>
+            <div className="text-xl font-black font-mono text-foreground">{s.value}</div>
+            <div className="text-[10px] text-muted-foreground mt-1 leading-tight">{s.label}</div>
           </div>
         ))}
       </div>
@@ -168,10 +168,10 @@ export default async function EstadisticasPage() {
           {leaderList.map((entry, idx) => {
             const pct = Math.round((entry.total_predictions / 72) * 100)
             return (
-              <div key={entry.user_id} className="flex items-center gap-4 px-5 py-3">
+              <div key={entry.user_id} className="flex items-center gap-3 px-4 py-3">
                 <span className="text-sm text-muted-foreground w-5 text-right shrink-0">{idx + 1}</span>
-                <span className="flex-1 text-sm font-medium text-foreground truncate">{entry.display_name}</span>
-                <div className="w-32 h-1.5 bg-foreground/10 rounded-full overflow-hidden shrink-0">
+                <span className="flex-1 text-sm font-medium text-foreground truncate min-w-0">{entry.display_name}</span>
+                <div className="w-20 sm:w-32 h-1.5 bg-foreground/10 rounded-full overflow-hidden shrink-0">
                   <div
                     className="h-full rounded-full transition-all duration-1000"
                     style={{
@@ -183,7 +183,7 @@ export default async function EstadisticasPage() {
                   />
                 </div>
                 <span className={cn(
-                  "text-xs font-mono font-bold w-12 text-right shrink-0",
+                  "text-xs font-mono font-bold w-10 sm:w-12 text-right shrink-0",
                   pct === 100 ? "text-emerald-400" : "text-muted-foreground",
                 )}>
                   {entry.total_predictions}/72
