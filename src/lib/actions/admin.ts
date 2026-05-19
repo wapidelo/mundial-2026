@@ -121,6 +121,22 @@ export async function setBonusResult(formData: FormData) {
   revalidatePath("/leaderboard")
 }
 
+export async function updateUserDisplayName(formData: FormData) {
+  await assertAdmin()
+  const userId = formData.get("user_id") as string
+  const name = (formData.get("display_name") as string)?.trim()
+  if (!userId || !name || name.length < 2) throw new Error("Nombre inválido")
+
+  const service = createServiceClient()
+  const { error } = await service
+    .from("profiles")
+    .update({ display_name: name })
+    .eq("id", userId)
+
+  if (error) throw new Error(error.message)
+  revalidatePath("/admin/users")
+}
+
 export async function toggleUserActive(formData: FormData) {
   await assertAdmin()
   const userId = formData.get("user_id") as string
