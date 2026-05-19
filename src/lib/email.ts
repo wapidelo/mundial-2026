@@ -1,10 +1,12 @@
 import { Resend } from "resend"
 import { createServiceClient } from "@/lib/supabase/server"
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
-const FROM = process.env.FROM_EMAIL!
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://mundial-2026-pucci.vercel.app"
 const RATE_LIMIT_MINUTES = 60
+
+// Lazy init so build doesn't fail when env vars aren't set yet
+function getResend() { return new Resend(process.env.RESEND_API_KEY!) }
+function getFrom() { return process.env.FROM_EMAIL! }
 
 // ─── Shared types (exported for /recibo page) ─────────────────────────────────
 
@@ -93,8 +95,8 @@ export async function upsertAndSendReceipt(
     timeStyle: "short",
   })
 
-  const { error: emailError } = await resend.emails.send({
-    from: FROM,
+  const { error: emailError } = await getResend().emails.send({
+    from: getFrom(),
     to: userEmail,
     subject: `✅ Quiniela guardada — ${predictions.length} predicciones confirmadas`,
     html: buildReceiptHtml({ displayName, predictions, bonus, receiptUrl, verificationCode, savedAt }),
@@ -133,8 +135,8 @@ export async function sendMatchResultEmails(
     const displayName = (p.profiles as any)?.display_name ?? email.split("@")[0]
     const pts = p.points ?? 0
     return [
-      resend.emails.send({
-        from: FROM,
+      getResend().emails.send({
+        from: getFrom(),
         to: email,
         subject: `⚽ Resultado M${matchData.matchNumber}: ${matchData.homeTeam} ${matchData.homeScore}–${matchData.awayScore} ${matchData.awayTeam}`,
         html: buildMatchResultHtml({
