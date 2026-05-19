@@ -1,8 +1,10 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { shouldSendReceiptEmail, upsertAndSendReceipt } from "@/lib/email"
+import type { PredictionSnapshotItem, BonusSnapshot } from "@/lib/email"
 
 const PredictionSchema = z.object({
   match_id: z.coerce.number().int().positive(),
@@ -62,6 +64,67 @@ export async function savePredictions(formData: FormData) {
 
   revalidatePath("/predictions")
   revalidatePath("/leaderboard")
+
+  // Fire-and-forget: generate/update receipt and send email (non-blocking)
+  const capturedUserId = user.id
+  ;(async () => {
+    try {
+      const service = createServiceClient()
+      const { data: authUser } = await service.auth.admin.getUserById(capturedUserId)
+      const userEmail = authUser?.user?.email
+      if (!userEmail) return
+
+      const { data: profile } = await service
+        .from("profiles")
+        .select("display_name")
+        .eq("id", capturedUserId)
+        .single()
+      const displayName = profile?.display_name ?? userEmail.split("@")[0]
+
+      const { data: allPreds } = await service
+        .from("predictions")
+        .select("predicted_home_score, predicted_away_score, matches(match_number, round, home_slot, away_slot, home_team:teams!home_team_id(name,flag_emoji), away_team:teams!away_team_id(name,flag_emoji))")
+        .eq("user_id", capturedUserId)
+
+      const snapshot: PredictionSnapshotItem[] = (allPreds ?? []).map((p) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const m = p.matches as any
+        return {
+          match_number: m?.match_number ?? 0,
+          home_label: m?.home_team?.name ?? m?.home_slot ?? "TBD",
+          away_label: m?.away_team?.name ?? m?.away_slot ?? "TBD",
+          home_flag: m?.home_team?.flag_emoji ?? "🏳️",
+          away_flag: m?.away_team?.flag_emoji ?? "🏳️",
+          predicted_home: p.predicted_home_score,
+          predicted_away: p.predicted_away_score,
+          round: m?.round ?? "group",
+        }
+      }).sort((a, b) => a.match_number - b.match_number)
+
+      const { data: bonusPred } = await service
+        .from("bonus_predictions")
+        .select("champion:teams!champion_team_id(name,flag_emoji), third_place:teams!third_place_team_id(name,flag_emoji)")
+        .eq("user_id", capturedUserId)
+        .single()
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bp = bonusPred as any
+      const bonus: BonusSnapshot | null = bp
+        ? {
+            champion_name: bp.champion?.name ?? null,
+            champion_flag: bp.champion?.flag_emoji ?? null,
+            third_place_name: bp.third_place?.name ?? null,
+            third_place_flag: bp.third_place?.flag_emoji ?? null,
+          }
+        : null
+
+      const sendEmail = await shouldSendReceiptEmail(capturedUserId)
+      await upsertAndSendReceipt(capturedUserId, displayName, userEmail, snapshot, bonus, sendEmail)
+    } catch (err) {
+      console.error("[receipt]", err)
+    }
+  })()
+
   return { ok: true }
 }
 
@@ -92,5 +155,66 @@ export async function saveBonusPredictions(formData: FormData) {
   if (error) throw new Error(error.message)
 
   revalidatePath("/predictions")
+
+  // Fire-and-forget: update receipt snapshot with new bonus (non-blocking)
+  const capturedUserId = user.id
+  ;(async () => {
+    try {
+      const service = createServiceClient()
+      const { data: authUser } = await service.auth.admin.getUserById(capturedUserId)
+      const userEmail = authUser?.user?.email
+      if (!userEmail) return
+
+      const { data: profile } = await service
+        .from("profiles")
+        .select("display_name")
+        .eq("id", capturedUserId)
+        .single()
+      const displayName = profile?.display_name ?? userEmail.split("@")[0]
+
+      const { data: allPreds } = await service
+        .from("predictions")
+        .select("predicted_home_score, predicted_away_score, matches(match_number, round, home_slot, away_slot, home_team:teams!home_team_id(name,flag_emoji), away_team:teams!away_team_id(name,flag_emoji))")
+        .eq("user_id", capturedUserId)
+
+      const snapshot: PredictionSnapshotItem[] = (allPreds ?? []).map((p) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const m = p.matches as any
+        return {
+          match_number: m?.match_number ?? 0,
+          home_label: m?.home_team?.name ?? m?.home_slot ?? "TBD",
+          away_label: m?.away_team?.name ?? m?.away_slot ?? "TBD",
+          home_flag: m?.home_team?.flag_emoji ?? "🏳️",
+          away_flag: m?.away_team?.flag_emoji ?? "🏳️",
+          predicted_home: p.predicted_home_score,
+          predicted_away: p.predicted_away_score,
+          round: m?.round ?? "group",
+        }
+      }).sort((a, b) => a.match_number - b.match_number)
+
+      const { data: bonusPred } = await service
+        .from("bonus_predictions")
+        .select("champion:teams!champion_team_id(name,flag_emoji), third_place:teams!third_place_team_id(name,flag_emoji)")
+        .eq("user_id", capturedUserId)
+        .single()
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bp = bonusPred as any
+      const bonus: BonusSnapshot | null = bp
+        ? {
+            champion_name: bp.champion?.name ?? null,
+            champion_flag: bp.champion?.flag_emoji ?? null,
+            third_place_name: bp.third_place?.name ?? null,
+            third_place_flag: bp.third_place?.flag_emoji ?? null,
+          }
+        : null
+
+      const sendEmail = await shouldSendReceiptEmail(capturedUserId)
+      await upsertAndSendReceipt(capturedUserId, displayName, userEmail, snapshot, bonus, sendEmail)
+    } catch (err) {
+      console.error("[receipt]", err)
+    }
+  })()
+
   return { ok: true }
 }

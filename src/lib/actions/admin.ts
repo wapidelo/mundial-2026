@@ -4,6 +4,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { CHAMPION_POINTS, THIRD_PLACE_POINTS } from "@/lib/scoring"
+import { sendMatchResultEmails } from "@/lib/email"
 
 async function assertAdmin() {
   const supabase = await createClient()
@@ -43,6 +44,35 @@ export async function setMatchResult(formData: FormData) {
   revalidatePath("/admin/matches")
   revalidatePath("/matches")
   revalidatePath("/leaderboard")
+
+  // Fire-and-forget: notify all users who predicted this match (non-blocking)
+  const matchId = parsed.data.match_id
+  const homeScore = parsed.data.home_score
+  const awayScore = parsed.data.away_score
+  ;(async () => {
+    try {
+      const { data: match } = await service
+        .from("matches")
+        .select("match_number, home_team:teams!home_team_id(name,flag_emoji), away_team:teams!away_team_id(name,flag_emoji)")
+        .eq("id", matchId)
+        .single()
+
+      if (!match) return
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const m = match as any
+      await sendMatchResultEmails(matchId, {
+        matchNumber: m.match_number,
+        homeTeam: m.home_team?.name ?? "Local",
+        homeFlag: m.home_team?.flag_emoji ?? "🏳️",
+        awayTeam: m.away_team?.name ?? "Visitante",
+        awayFlag: m.away_team?.flag_emoji ?? "🏳️",
+        homeScore,
+        awayScore,
+      })
+    } catch (err) {
+      console.error("[match-result-email]", err)
+    }
+  })()
 }
 
 const BonusResultSchema = z.object({
