@@ -83,6 +83,7 @@ export default async function EstadisticasPage() {
 
   const [
     { data: matches },
+    { count: totalMatchCount },
     { data: predictions },
     { data: bonusPreds },
     { data: teams },
@@ -92,6 +93,7 @@ export default async function EstadisticasPage() {
       .from("matches")
       .select("id, match_number, home_team:teams!home_team_id(name,flag_emoji), away_team:teams!away_team_id(name,flag_emoji)")
       .order("match_number"),
+    supabase.from("matches").select("id", { count: "exact", head: true }),
     supabase.from("predictions").select("match_id, predicted_home_score, predicted_away_score"),
     supabase.from("bonus_predictions").select("champion_team_id, third_place_team_id"),
     supabase.from("teams").select("id, name, flag_emoji"),
@@ -136,7 +138,7 @@ export default async function EstadisticasPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">📊 Estadísticas</h1>
+        <h1 className="font-display text-4xl font-bold text-foreground tracking-tight">📊 ESTADÍSTICAS</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Distribución agregada de predicciones del grupo.
         </p>
@@ -166,7 +168,7 @@ export default async function EstadisticasPage() {
         </div>
         <div className="divide-y divide-border/10">
           {leaderList.map((entry, idx) => {
-            const pct = Math.round((entry.total_predictions / 72) * 100)
+            const pct = Math.round((entry.total_predictions / (totalMatchCount ?? 72)) * 100)
             return (
               <div key={entry.user_id} className="flex items-center gap-3 px-4 py-3">
                 <span className="text-sm text-muted-foreground w-5 text-right shrink-0">{idx + 1}</span>
@@ -186,7 +188,7 @@ export default async function EstadisticasPage() {
                   "text-xs font-mono font-bold w-10 sm:w-12 text-right shrink-0",
                   pct === 100 ? "text-emerald-400" : "text-muted-foreground",
                 )}>
-                  {entry.total_predictions}/72
+                  {entry.total_predictions}/{totalMatchCount ?? 72}
                 </span>
               </div>
             )

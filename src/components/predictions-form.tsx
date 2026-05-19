@@ -7,18 +7,31 @@ import { savePredictions, saveBonusPredictions } from "@/lib/actions/predictions
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { calculateMatchPoints, pointsColor, pointsLabel } from "@/lib/scoring"
-import type { GroupWithMatches, Match, Prediction, BonusPrediction, Team } from "@/lib/types"
+import type { GroupWithMatches, Match, MatchWithPrediction, Prediction, BonusPrediction, Team, RoundType } from "@/lib/types"
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type PredictionPreview = {
+  matchId: number
+  matchNumber: number
+  homeLabel: string
+  awayLabel: string
+  homeFlag: string
+  awayFlag: string
+  homeScore: number
+  awayScore: number
+}
 
 // ─── Confirmation Dialog ─────────────────────────────────────────────────────
 
 function ConfirmDialog({
   isOpen,
-  newCount,
+  previews,
   onConfirm,
   onCancel,
 }: {
   isOpen: boolean
-  newCount: number
+  previews: PredictionPreview[]
   onConfirm: () => void
   onCancel: () => void
 }) {
@@ -29,18 +42,47 @@ function ConfirmDialog({
       onClick={onCancel}
     >
       <div
-        className="bg-card rounded-2xl border border-border/30 p-6 max-w-sm w-full mx-4 shadow-2xl"
+        className="bg-card rounded-2xl border border-border/30 p-5 max-w-sm w-full mx-4 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-center mb-4 text-4xl">🔒</div>
-        <h2 className="text-lg font-bold text-foreground mb-2 text-center">
-          ¿Guardar predicciones?
+        <div className="text-center mb-2 text-3xl">🔒</div>
+        <h2 className="text-lg font-bold text-foreground mb-1 text-center">
+          Confirmar predicciones
         </h2>
-        <p className="text-muted-foreground text-sm mb-1 text-center">
-          Vas a guardar{" "}
-          <strong className="text-foreground">{newCount} {newCount === 1 ? "predicción" : "predicciones"}</strong> nuevas.
+        <p className="text-muted-foreground text-sm mb-3 text-center">
+          Guardando{" "}
+          <strong className="text-foreground">{previews.length} {previews.length === 1 ? "predicción" : "predicciones"}</strong>
         </p>
-        <p className="text-amber-500 text-xs mb-5 text-center font-medium">
+
+        {/* Review list */}
+        <div
+          className="rounded-xl border border-border/20 divide-y divide-border/10 mb-3 overflow-y-auto"
+          style={{ background: "rgba(0,0,0,0.3)", maxHeight: "13rem" }}
+        >
+          {previews.map((p) => (
+            <div key={p.matchId} className="flex items-center gap-1.5 px-3 py-2">
+              <span className="text-muted-foreground font-mono text-[10px] w-6 shrink-0">
+                #{p.matchNumber}
+              </span>
+              <div className="flex-1 flex items-center justify-end gap-1 min-w-0">
+                <span className="text-[11px] text-foreground/70 truncate text-right">{p.homeLabel}</span>
+                <span className="shrink-0 text-sm">{p.homeFlag}</span>
+              </div>
+              <span
+                className="font-mono font-black text-sm shrink-0 px-2 py-0.5 rounded-lg tabular-nums"
+                style={{ background: "rgba(139,26,47,0.2)", color: "#fecc02", minWidth: "3.5rem", textAlign: "center" }}
+              >
+                {p.homeScore}–{p.awayScore}
+              </span>
+              <div className="flex-1 flex items-center gap-1 min-w-0">
+                <span className="shrink-0 text-sm">{p.awayFlag}</span>
+                <span className="text-[11px] text-foreground/70 truncate">{p.awayLabel}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-amber-500 text-xs mb-4 text-center font-medium">
           ⚠️ Una vez guardadas, no podrán modificarse.
         </p>
         <div className="flex gap-3">
@@ -48,14 +90,14 @@ function ConfirmDialog({
             onClick={onCancel}
             className="flex-1 py-2.5 rounded-xl border border-border/30 text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors text-sm font-medium"
           >
-            Cancelar
+            Revisar
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 py-2.5 rounded-xl font-bold text-white text-sm transition-opacity hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
           >
-            Confirmar y bloquear
+            ✓ Confirmar
           </button>
         </div>
       </div>
@@ -246,6 +288,20 @@ function ExcelUploadSection({
   )
 }
 
+// ─── Round Labels ─────────────────────────────────────────────────────────────
+
+const ROUND_LABELS: Record<RoundType, string> = {
+  group: "Fase de Grupos",
+  round_of_32: "🏟️ Ronda de 32",
+  round_of_16: "⚔️ Octavos de Final",
+  quarter_final: "🔥 Cuartos de Final",
+  semi_final: "🌟 Semifinales",
+  third_place: "🥉 Tercer Lugar",
+  final: "🏆 Final",
+}
+
+const KNOCKOUT_ORDER: RoundType[] = ["round_of_32", "round_of_16", "quarter_final", "semi_final", "third_place", "final"]
+
 // ─── Score Input ──────────────────────────────────────────────────────────────
 
 function ScoreInput({
@@ -285,7 +341,7 @@ function MatchCard({
   importedAway,
   importKey,
 }: {
-  match: GroupWithMatches["matches"][number]
+  match: MatchWithPrediction
   disabled: boolean
   importedHome?: number
   importedAway?: number
@@ -320,8 +376,10 @@ function MatchCard({
       <div className="flex items-center gap-3">
         {/* Home team */}
         <div className="flex-1 text-right">
-          <span className="text-base mr-1">{match.home_team?.flag_emoji}</span>
-          <span className="text-sm font-medium text-foreground">{match.home_team?.name}</span>
+          <span className="text-base mr-1">{match.home_team?.flag_emoji ?? "🏳️"}</span>
+          <span className={cn("text-sm font-medium", match.home_team ? "text-foreground" : "text-muted-foreground italic")}>
+            {match.home_team?.name ?? match.home_slot ?? "TBD"}
+          </span>
         </div>
 
         {/* Score inputs */}
@@ -343,8 +401,10 @@ function MatchCard({
 
         {/* Away team */}
         <div className="flex-1 text-left">
-          <span className="text-sm font-medium text-foreground">{match.away_team?.name}</span>
-          <span className="text-base ml-1">{match.away_team?.flag_emoji}</span>
+          <span className={cn("text-sm font-medium", match.away_team ? "text-foreground" : "text-muted-foreground italic")}>
+            {match.away_team?.name ?? match.away_slot ?? "TBD"}
+          </span>
+          <span className="text-base ml-1">{match.away_team?.flag_emoji ?? "🏳️"}</span>
         </div>
       </div>
 
@@ -370,13 +430,16 @@ function GroupSection({
   disabled,
   importedPredictions,
   importKey,
+  onSectionSave,
 }: {
   group: GroupWithMatches
   disabled: boolean
   importedPredictions: Record<number, { home: number; away: number }>
   importKey: number
+  onSectionSave: (matchIds: number[]) => void
 }) {
   const predicted = group.matches.filter((m) => m.prediction).length
+  const unpredicted = group.matches.filter((m) => !m.prediction).length
   return (
     <details open className="rounded-xl border border-border/20 overflow-hidden">
       <summary
@@ -412,6 +475,75 @@ function GroupSection({
           />
         ))}
       </div>
+      {!disabled && unpredicted > 0 && (
+        <div className="px-4 pb-3 pt-0 flex justify-end">
+          <button
+            type="button"
+            onClick={() => onSectionSave(group.matches.map((m) => m.id))}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:brightness-110"
+            style={{ background: "rgba(139,26,47,0.2)", color: "#fca5a5", border: "1px solid rgba(139,26,47,0.3)" }}
+          >
+            💾 Guardar Grupo {group.name}
+          </button>
+        </div>
+      )}
+    </details>
+  )
+}
+
+// ─── Knockout Section ─────────────────────────────────────────────────────────
+
+function KnockoutSection({
+  round,
+  matches,
+  disabled,
+  importKey,
+  onSectionSave,
+}: {
+  round: RoundType
+  matches: MatchWithPrediction[]
+  disabled: boolean
+  importKey: number
+  onSectionSave: (matchIds: number[]) => void
+}) {
+  const predicted = matches.filter((m) => m.prediction).length
+  const unpredicted = matches.filter((m) => !m.prediction).length
+  return (
+    <details open className="rounded-xl border border-border/20 overflow-hidden">
+      <summary
+        className="flex items-center justify-between px-5 py-3 cursor-pointer select-none list-none"
+        style={{ background: "rgba(99,102,241,0.08)", borderBottom: "1px solid rgba(99,102,241,0.15)" }}
+      >
+        <span className="font-bold text-foreground">{ROUND_LABELS[round]}</span>
+        <div className="flex items-center gap-2 text-sm">
+          <span className={cn("font-mono font-bold", predicted === matches.length ? "text-emerald-500" : "text-muted-foreground")}>
+            {predicted}/{matches.length}
+          </span>
+          <span className="text-muted-foreground">▾</span>
+        </div>
+      </summary>
+      <div className="p-4 grid gap-3 sm:grid-cols-2">
+        {matches.map((match) => (
+          <MatchCard
+            key={match.id}
+            match={match}
+            disabled={disabled}
+            importKey={importKey}
+          />
+        ))}
+      </div>
+      {!disabled && unpredicted > 0 && (
+        <div className="px-4 pb-3 pt-0 flex justify-end">
+          <button
+            type="button"
+            onClick={() => onSectionSave(matches.map((m) => m.id))}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:brightness-110"
+            style={{ background: "rgba(99,102,241,0.2)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.3)" }}
+          >
+            💾 Guardar {ROUND_LABELS[round]}
+          </button>
+        </div>
+      )}
     </details>
   )
 }
@@ -535,24 +667,28 @@ function BonusSection({
 
 export function PredictionsForm({
   groupsWithMatches,
+  knockoutMatches,
   predictionMap,
   bonusPrediction,
   allTeams,
   isClosed,
   userId,
+  totalMatchCount,
 }: {
   groupsWithMatches: GroupWithMatches[]
+  knockoutMatches: MatchWithPrediction[]
   predictionMap: Record<number, Prediction>
   bonusPrediction: BonusPrediction | null
   allTeams: Team[]
   isClosed: boolean
   userId: string
+  totalMatchCount: number
 }) {
   const formRef = useRef<HTMLFormElement>(null)
   const [isPending, startTransition] = useTransition()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
-  const [newPredCount, setNewPredCount] = useState(0)
+  const [pendingPreviews, setPendingPreviews] = useState<PredictionPreview[]>([])
   const [importedPredictions, setImportedPredictions] = useState<Record<number, { home: number; away: number }>>({})
   const [importKey, setImportKey] = useState(0)
 
@@ -586,30 +722,58 @@ export function PredictionsForm({
     return () => { supabase.removeChannel(channel) }
   }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function countNewPredictions(fd: FormData): number {
-    let count = 0
-    for (const group of groupsWithMatches) {
-      for (const match of group.matches) {
-        if (predictionMap[match.id]) continue
-        const home = fd.get(`prediction_${match.id}_home`)
-        const away = fd.get(`prediction_${match.id}_away`)
-        if (home !== null && home !== "" && away !== null && away !== "") count++
-      }
+  function buildPreviews(fd: FormData, targetIds?: Set<number>): { filteredFd: FormData; previews: PredictionPreview[] } {
+    const allMatches = [
+      ...groupsWithMatches.flatMap((g) => g.matches),
+      ...knockoutMatches,
+    ]
+    const filteredFd = new FormData()
+    const previews: PredictionPreview[] = []
+    for (const match of allMatches) {
+      if (predictionMap[match.id]) continue
+      if (targetIds && !targetIds.has(match.id)) continue
+      const home = fd.get(`prediction_${match.id}_home`)
+      const away = fd.get(`prediction_${match.id}_away`)
+      if (home === null || home === "" || away === null || away === "") continue
+      filteredFd.set(`prediction_${match.id}_home`, home)
+      filteredFd.set(`prediction_${match.id}_away`, away)
+      previews.push({
+        matchId: match.id,
+        matchNumber: match.match_number,
+        homeLabel: match.home_team?.name ?? match.home_slot ?? "TBD",
+        awayLabel: match.away_team?.name ?? match.away_slot ?? "TBD",
+        homeFlag: match.home_team?.flag_emoji ?? "🏳️",
+        awayFlag: match.away_team?.flag_emoji ?? "🏳️",
+        homeScore: Number(home),
+        awayScore: Number(away),
+      })
     }
-    return count
+    previews.sort((a, b) => a.matchNumber - b.matchNumber)
+    return { filteredFd, previews }
+  }
+
+  function openConfirm(filteredFd: FormData, previews: PredictionPreview[]) {
+    if (previews.length === 0) {
+      toast.info("No hay predicciones nuevas que guardar en esta sección")
+      return
+    }
+    setPendingPreviews(previews)
+    setPendingFormData(filteredFd)
+    setConfirmOpen(true)
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
-    const count = countNewPredictions(fd)
-    if (count === 0) {
-      toast.info("No hay predicciones nuevas que guardar")
-      return
-    }
-    setNewPredCount(count)
-    setPendingFormData(fd)
-    setConfirmOpen(true)
+    const { filteredFd, previews } = buildPreviews(fd)
+    openConfirm(filteredFd, previews)
+  }
+
+  function handleSectionSave(matchIds: number[]) {
+    if (!formRef.current) return
+    const fd = new FormData(formRef.current)
+    const { filteredFd, previews } = buildPreviews(fd, new Set(matchIds))
+    openConfirm(filteredFd, previews)
   }
 
   function handleConfirm() {
@@ -638,7 +802,7 @@ export function PredictionsForm({
     <div className="space-y-4">
       <ConfirmDialog
         isOpen={confirmOpen}
-        newCount={newPredCount}
+        previews={pendingPreviews}
         onConfirm={handleConfirm}
         onCancel={() => setConfirmOpen(false)}
       />
@@ -654,13 +818,13 @@ export function PredictionsForm({
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
-                  width: `${(totalPredicted / 72) * 100}%`,
+                  width: `${(totalPredicted / totalMatchCount) * 100}%`,
                   background: "linear-gradient(90deg, #8b1a2f, #fecc02)",
                 }}
               />
             </div>
             <span className="text-sm text-muted-foreground shrink-0 font-mono">
-              {totalPredicted}/72
+              {totalPredicted}/{totalMatchCount}
             </span>
           </div>
           <ExcelUploadSection
@@ -679,8 +843,24 @@ export function PredictionsForm({
             disabled={isClosed}
             importedPredictions={importedPredictions}
             importKey={importKey}
+            onSectionSave={handleSectionSave}
           />
         ))}
+
+        {KNOCKOUT_ORDER.map((round) => {
+          const roundMatches = knockoutMatches.filter((m) => m.round === round)
+          if (roundMatches.length === 0) return null
+          return (
+            <KnockoutSection
+              key={round}
+              round={round}
+              matches={roundMatches}
+              disabled={isClosed}
+              importKey={importKey}
+              onSectionSave={handleSectionSave}
+            />
+          )
+        })}
 
         {!isClosed && (
           <div className="sticky bottom-4">

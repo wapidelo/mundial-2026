@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono, Barlow_Condensed } from "next/font/google"
 import { Toaster } from "@/components/ui/sonner"
 import { Providers } from "@/components/providers"
 import "./globals.css"
@@ -14,6 +14,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 })
 
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
+})
+
 export const metadata: Metadata = {
   title: "Quiniela Mundial 2026",
   description: "Predice los resultados del Mundial de Fútbol 2026",
@@ -25,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full`}
+      className={`${geistSans.variable} ${geistMono.variable} ${barlowCondensed.variable} h-full`}
       suppressHydrationWarning
     >
       <body className="min-h-full bg-background text-foreground antialiased">

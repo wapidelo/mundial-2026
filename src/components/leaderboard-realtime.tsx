@@ -52,7 +52,7 @@ export function LeaderboardRealtime({
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">🏆 Tabla de Posiciones</h1>
+          <h1 className="font-display text-4xl font-bold text-foreground tracking-tight">🏆 TABLA DE POSICIONES</h1>
           <div className="flex items-center gap-1.5 mt-1">
             <span className={cn(
               "w-2 h-2 rounded-full transition-colors duration-500",

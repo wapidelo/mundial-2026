@@ -87,4 +87,17 @@ test.describe("Predicciones", () => {
     const val = await homeInput.getAttribute("min")
     expect(val).toBe("0")
   })
+
+  test("el contador de predicciones muestra el total dinámico desde la BD", async ({ page }) => {
+    await page.goto("/predictions")
+    // Counter should have a slash with a number after it (dynamic, not hardcoded to /72)
+    const counter = page.locator("text=/\\d+\\/\\d+/").first()
+    await expect(counter).toBeVisible()
+  })
+
+  test("muestra la sección Ronda de 32 con los 104 partidos pre-sembrados", async ({ page }) => {
+    await page.goto("/predictions")
+    // All 32 knockout slots are pre-seeded — Ronda de 32 should always be visible
+    await expect(page.getByText("Ronda de 32")).toBeVisible()
+  })
 })

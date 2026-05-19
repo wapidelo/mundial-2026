@@ -69,5 +69,20 @@ test.describe("Panel Admin", () => {
       await page.waitForURL("**/admin/matches")
       await expect(page.getByRole("heading", { name: /administrar resultados/i })).toBeVisible()
     })
+
+    test("muestra el Bracket Eliminatorio con slots pre-sembrados", async ({ page }) => {
+      await page.goto("/admin/matches")
+      await expect(page.getByText("Bracket Eliminatorio")).toBeVisible()
+      await expect(page.getByText("Ronda de 32").first()).toBeVisible()
+    })
+
+    test("muestra selects para asignar equipos a los slots del bracket", async ({ page }) => {
+      await page.goto("/admin/matches")
+      // Each knockout match has home + away assignment selects
+      const assignSelects = page.locator("select[name='team_id']")
+      const count = await assignSelects.count()
+      // At least bonus (2) + some knockout assignment (R32 has 32 team slots)
+      expect(count).toBeGreaterThan(4)
+    })
   })
 })

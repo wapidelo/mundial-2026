@@ -8,21 +8,29 @@ export type Team = {
   name: string
   flag_emoji: string
   group_id: number
+  confederation?: string | null
   groups?: Group
 }
+
+export type RoundType =
+  | "group" | "round_of_32" | "round_of_16"
+  | "quarter_final" | "semi_final" | "third_place" | "final"
 
 export type Match = {
   id: number
   match_number: number
-  home_team_id: number
-  away_team_id: number
-  group_id: number
+  home_team_id: number | null
+  away_team_id: number | null
+  group_id: number | null
+  round: RoundType
+  home_slot: string | null
+  away_slot: string | null
   scheduled_at: string
   home_score: number | null
   away_score: number | null
   status: "scheduled" | "finished"
-  home_team?: Team
-  away_team?: Team
+  home_team?: Team | null
+  away_team?: Team | null
   groups?: Group
 }
 

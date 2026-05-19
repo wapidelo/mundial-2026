@@ -60,6 +60,7 @@
   --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-display);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -74,6 +75,23 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans, Arial, sans-serif);
+}
+
+.font-display {
+  font-family: var(--font-display, var(--font-geist-sans, Arial, sans-serif));
+  letter-spacing: -0.01em;
+}
+
+/* Subtle grain texture on the whole page in dark mode */
+.dark body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -96,4 +114,22 @@ input[type="number"]::-webkit-outer-spin-button {
   30%  { transform: scale(1.18); color: #34d399; }
   60%  { transform: scale(1.08); }
   100% { transform: scale(1); }
+}
+
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(254,204,2,0); }
+  50%       { box-shadow: 0 0 20px 4px rgba(254,204,2,0.18); }
+}
+
+@keyframes countdownTick {
+  0%   { transform: translateY(0); opacity: 1; }
+  45%  { transform: translateY(-4px); opacity: 0; }
+  50%  { transform: translateY(4px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

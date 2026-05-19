@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic"
 type MatchWithTeams = Match & {
   home_team: { name: string; flag_emoji: string } | null
   away_team: { name: string; flag_emoji: string } | null
+  home_slot: string | null
+  away_slot: string | null
 }
 
 type GroupWithMatches = Group & { matches: MatchWithTeams[] }
@@ -22,10 +24,14 @@ export default async function MatchesPage() {
       .order("match_number"),
   ])
 
+  const allMatches = (matches ?? []) as MatchWithTeams[]
+
   const initialGroups: GroupWithMatches[] = (groups ?? []).map((g) => ({
     ...g,
-    matches: (matches ?? []).filter((m) => m.group_id === g.id) as MatchWithTeams[],
+    matches: allMatches.filter((m) => m.group_id === g.id),
   }))
 
-  return <MatchesRealtime initialGroups={initialGroups} />
+  const initialKnockouts = allMatches.filter((m) => m.round !== "group")
+
+  return <MatchesRealtime initialGroups={initialGroups} initialKnockouts={initialKnockouts} />
 }

@@ -9,6 +9,8 @@ import type { Match } from "@/lib/types"
 type MatchWithTeams = Match & {
   home_team: { name: string; flag_emoji: string } | null
   away_team: { name: string; flag_emoji: string } | null
+  home_slot: string | null
+  away_slot: string | null
 }
 
 export function AdminMatchRow({ match: initialMatch }: { match: MatchWithTeams }) {
@@ -48,11 +50,11 @@ export function AdminMatchRow({ match: initialMatch }: { match: MatchWithTeams }
         </div>
 
         <div className="flex-1 flex items-center gap-2 text-sm min-w-0">
-          <span>{match.home_team?.flag_emoji}</span>
-          <span className="font-medium text-foreground truncate">{match.home_team?.name}</span>
+          <span>{match.home_team?.flag_emoji ?? "🏳️"}</span>
+          <span className="font-medium text-foreground truncate">{match.home_team?.name ?? match.home_slot ?? "TBD"}</span>
           <span className="text-muted-foreground shrink-0">vs</span>
-          <span className="font-medium text-foreground truncate">{match.away_team?.name}</span>
-          <span>{match.away_team?.flag_emoji}</span>
+          <span className="font-medium text-foreground truncate">{match.away_team?.name ?? match.away_slot ?? "TBD"}</span>
+          <span>{match.away_team?.flag_emoji ?? "🏳️"}</span>
         </div>
 
         {isFinished && (

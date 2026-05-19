@@ -90,3 +90,35 @@ export async function setBonusResult(formData: FormData) {
   revalidatePath("/admin/matches")
   revalidatePath("/leaderboard")
 }
+
+const AssignTeamSchema = z.object({
+  match_id: z.coerce.number().int().positive(),
+  side: z.enum(["home", "away"]),
+  team_id: z.coerce.number().int().positive(),
+})
+
+export async function assignTeamToMatch(formData: FormData) {
+  await assertAdmin()
+  const parsed = AssignTeamSchema.parse({
+    match_id: formData.get("match_id"),
+    side: formData.get("side"),
+    team_id: formData.get("team_id"),
+  })
+
+  const service = createServiceClient()
+  const update = parsed.side === "home"
+    ? { home_team_id: parsed.team_id }
+    : { away_team_id: parsed.team_id }
+
+  const { error } = await service
+    .from("matches")
+    .update(update)
+    .eq("id", parsed.match_id)
+    .neq("round", "group")
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath("/admin/matches")
+  revalidatePath("/matches")
+  revalidatePath("/predictions")
+}
