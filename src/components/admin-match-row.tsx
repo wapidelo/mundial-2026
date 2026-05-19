@@ -64,7 +64,7 @@ export function AdminMatchRow({ match: initialMatch }: { match: MatchWithTeams }
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex items-center gap-2 shrink-0">
+        <form key={`${match.home_score}-${match.away_score}`} onSubmit={handleSubmit} className="flex items-center gap-2 shrink-0">
           <input type="hidden" name="match_id" value={match.id} />
           <input
             type="number"
