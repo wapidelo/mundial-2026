@@ -121,6 +121,24 @@ export async function setBonusResult(formData: FormData) {
   revalidatePath("/leaderboard")
 }
 
+export async function toggleUserActive(formData: FormData) {
+  await assertAdmin()
+  const userId = formData.get("user_id") as string
+  const active = formData.get("active") === "true"
+  if (!userId) throw new Error("Usuario inválido")
+
+  const service = createServiceClient()
+  const { error } = await service
+    .from("profiles")
+    .update({ active })
+    .eq("id", userId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath("/admin/users")
+  revalidatePath("/leaderboard")
+}
+
 const AssignTeamSchema = z.object({
   match_id: z.coerce.number().int().positive(),
   side: z.enum(["home", "away"]),

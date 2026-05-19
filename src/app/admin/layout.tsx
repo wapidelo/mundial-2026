@@ -21,6 +21,20 @@ export default async function AdminLayout({
           ← App
         </Link>
         <span className="font-bold text-sm" style={{ color: "#fecc02" }}>⚙️ Panel Admin</span>
+        <div className="flex items-center gap-1 ml-4">
+          <Link
+            href="/admin/matches"
+            className="text-sm px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+          >
+            ⚽ Partidos
+          </Link>
+          <Link
+            href="/admin/users"
+            className="text-sm px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+          >
+            👥 Usuarios
+          </Link>
+        </div>
         <div className="ml-auto text-xs text-muted-foreground bg-yellow-500/10 border border-yellow-500/20 px-2 py-1 rounded-full font-medium" style={{ color: "#fecc02" }}>
           Solo administrador
         </div>
