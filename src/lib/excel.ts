@@ -16,14 +16,19 @@ export function parseExcelFile(
         const result: Record<number, { home: number; away: number }> = {}
         for (const row of rows) {
           const matchNum = Number(row[0])
-          const home = Number(row[3])
-          const away = Number(row[4])
           if (!Number.isInteger(matchNum) || matchNum < 1) continue
+          const homeRaw = row[3]
+          const awayRaw = row[4]
+          if (homeRaw === "" || homeRaw === null || homeRaw === undefined) continue
+          if (awayRaw === "" || awayRaw === null || awayRaw === undefined) continue
+          const home = Number(homeRaw)
+          const away = Number(awayRaw)
           if (!Number.isFinite(home) || !Number.isFinite(away)) continue
+          if (!Number.isInteger(home) || !Number.isInteger(away)) continue
           if (home < 0 || home > 99 || away < 0 || away > 99) continue
           const matchId = matchNumberToMatchId.get(matchNum)
           if (!matchId) continue
-          result[matchId] = { home: Math.floor(home), away: Math.floor(away) }
+          result[matchId] = { home, away }
         }
         resolve(result)
       } catch (err) {

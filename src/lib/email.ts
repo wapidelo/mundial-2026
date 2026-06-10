@@ -237,6 +237,86 @@ function buildReceiptHtml(opts: {
 </html>`
 }
 
+// ─── New user notification (to admin) ────────────────────────────────────────
+
+export async function sendNewUserNotificationToAdmin(userEmail: string): Promise<void> {
+  const adminEmail = process.env.ADMIN_EMAIL
+  if (!adminEmail) return
+  const { error } = await getResend().emails.send({
+    from: getFrom(),
+    to: adminEmail,
+    subject: `🆕 Nuevo participante registrado — ${userEmail}`,
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#0a0f1e;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0a0f1e">
+<tr><td align="center" style="padding:40px 16px">
+<table width="500" cellpadding="0" cellspacing="0" border="0" style="max-width:500px;width:100%;background:#111827;border-radius:16px;border:1px solid rgba(255,255,255,0.08);overflow:hidden">
+  <tr><td style="background:linear-gradient(90deg,#8b1a2f,#1a1060,#8b1a2f);height:5px;font-size:0">&nbsp;</td></tr>
+  <tr><td align="center" style="padding:32px 40px 24px">
+    <div style="font-size:40px;margin-bottom:12px">🆕</div>
+    <h1 style="margin:0 0 8px;font-size:20px;font-weight:800;color:#fff">Nuevo participante</h1>
+    <p style="margin:0;font-size:14px;color:#64748b">Se registró en la Quiniela Mundial 2026</p>
+    <div style="margin:20px 0;padding:14px 20px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px">
+      <p style="margin:0;font-size:16px;font-weight:700;color:#94a3b8">${userEmail}</p>
+    </div>
+    <a href="${APP_URL}/admin/users" style="display:inline-block;padding:10px 24px;background:linear-gradient(135deg,#8b1a2f,#c0392b);color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:14px">
+      Ver en el panel →
+    </a>
+  </td></tr>
+  <tr><td style="background:rgba(0,0,0,0.3);padding:16px 40px;border-top:1px solid rgba(255,255,255,0.05)">
+    <p style="margin:0;font-size:11px;color:#1e293b;text-align:center">Quiniela Mundial 2026 · Panel de administración</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`,
+  })
+  if (error) console.error("[email] admin notification failed", error)
+}
+
+// ─── Account activated email (to user) ───────────────────────────────────────
+
+export async function sendAccountActivatedEmail(
+  userEmail: string,
+  displayName: string,
+): Promise<void> {
+  const { error } = await getResend().emails.send({
+    from: getFrom(),
+    to: userEmail,
+    subject: `✅ ¡Ya puedes participar! — Quiniela Mundial 2026`,
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#0a0f1e;font-family:Arial,Helvetica,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0a0f1e">
+<tr><td align="center" style="padding:40px 16px">
+<table width="500" cellpadding="0" cellspacing="0" border="0" style="max-width:500px;width:100%;background:#111827;border-radius:16px;border:1px solid rgba(255,255,255,0.08);overflow:hidden">
+  <tr><td style="background:linear-gradient(90deg,#8b1a2f,#1a1060,#8b1a2f);height:5px;font-size:0">&nbsp;</td></tr>
+  <tr><td align="center" style="padding:32px 40px 24px">
+    <div style="font-size:48px;margin-bottom:12px">⚽</div>
+    <h1 style="margin:0 0 4px;font-size:22px;font-weight:800;color:#fff">¡Ya puedes participar!</h1>
+    <p style="margin:0;font-size:14px;font-weight:700;color:#fecc02;letter-spacing:.1em">MUNDIAL 2026</p>
+    <p style="margin:16px 0 4px;font-size:13px;color:#64748b">Hola, <strong style="color:#94a3b8">${displayName}</strong></p>
+    <p style="margin:0 0 24px;font-size:13px;color:#64748b;line-height:1.6">Tu cuenta fue activada. Ya puedes ingresar y registrar tus predicciones antes del <strong style="color:#f87171">11 de junio</strong>.</p>
+    <a href="${APP_URL}/predictions" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#8b1a2f,#c0392b);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px">
+      Registrar mis predicciones →
+    </a>
+  </td></tr>
+  <tr><td style="background:rgba(0,0,0,0.3);padding:16px 40px;border-top:1px solid rgba(255,255,255,0.05)">
+    <p style="margin:0;font-size:11px;color:#1e293b;text-align:center">Quiniela Mundial 2026 · 11 Jun – 19 Jul 2026</p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`,
+  })
+  if (error) console.error("[email] activation email failed", error)
+}
+
 // ─── HTML: Match result email ─────────────────────────────────────────────────
 
 function buildMatchResultHtml(opts: {

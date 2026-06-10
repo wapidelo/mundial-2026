@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { PredictionsForm } from "@/components/predictions-form"
+import { DeadlineBanner } from "@/components/deadline-banner"
 import type { GroupWithMatches, MatchWithPrediction, Team } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
@@ -75,10 +76,12 @@ export default async function PredictionsPage() {
         )}
       </div>
 
-      {isClosed && (
+      {isClosed ? (
         <div className="mb-6 p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 text-sm">
           🔒 Las predicciones cerraron el 11 de junio. Puedes ver tus predicciones pero ya no puedes modificarlas.
         </div>
+      ) : (
+        <DeadlineBanner tournamentStart={process.env.TOURNAMENT_START ?? "2026-06-11T19:00:00Z"} />
       )}
 
       <PredictionsForm

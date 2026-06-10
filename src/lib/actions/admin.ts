@@ -153,6 +153,7 @@ export async function toggleUserActive(formData: FormData) {
 
   revalidatePath("/admin/users")
   revalidatePath("/leaderboard")
+
 }
 
 const AssignTeamSchema = z.object({

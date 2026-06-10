@@ -60,7 +60,7 @@ function DistributionBar({
     <div className="space-y-1.5">
       <div className="flex h-3 rounded-full overflow-hidden gap-px">
         {homePct > 0 && (
-          <div className="h-full transition-all duration-700" style={{ width: `${homePct}%`, background: "#8b1a2f" }} />
+          <div className="h-full transition-all duration-700" style={{ width: `${homePct}%`, background: "var(--primary)" }} />
         )}
         {drawPct > 0 && (
           <div className="h-full transition-all duration-700" style={{ width: `${drawPct}%`, background: "#374151" }} />
@@ -168,7 +168,7 @@ export default async function EstadisticasPage() {
         </div>
         <div className="divide-y divide-border/10">
           {leaderList.map((entry, idx) => {
-            const pct = Math.round((entry.total_predictions / (totalMatchCount ?? 72)) * 100)
+            const pct = Math.round((entry.total_predictions / (totalMatchCount ?? 104)) * 100)
             return (
               <div key={entry.user_id} className="flex items-center gap-3 px-4 py-3">
                 <span className="text-sm text-muted-foreground w-5 text-right shrink-0">{idx + 1}</span>
@@ -180,7 +180,7 @@ export default async function EstadisticasPage() {
                       width: `${pct}%`,
                       background: pct === 100
                         ? "linear-gradient(90deg,#10b981,#34d399)"
-                        : "linear-gradient(90deg,#8b1a2f,#c0392b)",
+                        : "var(--primary)",
                     }}
                   />
                 </div>
@@ -188,7 +188,7 @@ export default async function EstadisticasPage() {
                   "text-xs font-mono font-bold w-10 sm:w-12 text-right shrink-0",
                   pct === 100 ? "text-emerald-400" : "text-muted-foreground",
                 )}>
-                  {entry.total_predictions}/{totalMatchCount ?? 72}
+                  {entry.total_predictions}/{totalMatchCount ?? 104}
                 </span>
               </div>
             )
@@ -222,7 +222,7 @@ export default async function EstadisticasPage() {
                       <div className="h-1.5 bg-foreground/10 rounded-full overflow-hidden">
                         <div
                           className="h-full rounded-full transition-all duration-700"
-                          style={{ width: `${pct}%`, background: "linear-gradient(90deg,#fecc02,#f59e0b)" }}
+                          style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--primary), var(--accent))" }}
                         />
                       </div>
                     </div>

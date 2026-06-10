@@ -70,7 +70,7 @@ function ConfirmDialog({
               </div>
               <span
                 className="font-mono font-black text-sm shrink-0 px-2 py-0.5 rounded-lg tabular-nums"
-                style={{ background: "rgba(139,26,47,0.2)", color: "#fecc02", minWidth: "3.5rem", textAlign: "center" }}
+                style={{ background: "color-mix(in srgb, var(--primary) 15%, transparent)", color: "var(--accent)", minWidth: "3.5rem", textAlign: "center" }}
               >
                 {p.homeScore}–{p.awayScore}
               </span>
@@ -82,8 +82,8 @@ function ConfirmDialog({
           ))}
         </div>
 
-        <p className="text-amber-500 text-xs mb-4 text-center font-medium">
-          ⚠️ Una vez guardadas, no podrán modificarse.
+        <p className="text-indigo-400 text-xs mb-4 text-center font-medium">
+          ✏️ Puedes editar tus predicciones hasta el 11 de junio.
         </p>
         <div className="flex gap-3">
           <button
@@ -95,7 +95,7 @@ function ConfirmDialog({
           <button
             onClick={onConfirm}
             className="flex-1 py-2.5 rounded-xl font-bold text-white text-sm transition-opacity hover:opacity-90"
-            style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+            style={{ background: "var(--primary)" }}
           >
             ✓ Confirmar
           </button>
@@ -105,18 +105,20 @@ function ConfirmDialog({
   )
 }
 
-// ─── Excel Upload ─────────────────────────────────────────────────────────────
+// ─── Excel Import Modal ───────────────────────────────────────────────────────
 
-function ExcelUploadSection({
+function ExcelImportModal({
   groupsWithMatches,
+  knockoutMatches,
   onImport,
 }: {
   groupsWithMatches: GroupWithMatches[]
+  knockoutMatches: MatchWithPrediction[]
   onImport: (predictions: Record<number, { home: number; away: number }>) => void
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [showInstructions, setShowInstructions] = useState(false)
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -124,15 +126,17 @@ function ExcelUploadSection({
     setIsLoading(true)
     try {
       const { parseExcelFile } = await import("@/lib/excel")
-      const matchNumberToId = new Map(
-        groupsWithMatches.flatMap((g) => g.matches.map((m) => [m.match_number, m.id])),
-      )
+      const matchNumberToId = new Map([
+        ...groupsWithMatches.flatMap((g) => g.matches.map((m) => [m.match_number, m.id] as [number, number])),
+        ...knockoutMatches.map((m) => [m.match_number, m.id] as [number, number]),
+      ])
       const parsed = await parseExcelFile(file, matchNumberToId)
       const count = Object.keys(parsed).length
       if (count === 0) {
         toast.error("No se encontraron predicciones válidas. Revisa que el archivo sea la plantilla correcta.")
       } else {
         onImport(parsed)
+        setOpen(false)
         toast.success(`✅ ${count} predicciones importadas — revisa y confirma antes de guardar`)
       }
     } catch {
@@ -145,146 +149,157 @@ function ExcelUploadSection({
 
   async function handleDownloadTemplate() {
     const { downloadTemplate } = await import("@/lib/excel")
-    const matches = groupsWithMatches.flatMap((g) =>
-      g.matches.map((m) => ({
+    const matches = [
+      ...groupsWithMatches.flatMap((g) =>
+        g.matches.map((m) => ({
+          match_number: m.match_number,
+          home_name: m.home_team?.name ?? "?",
+          away_name: m.away_team?.name ?? "?",
+        })),
+      ),
+      ...knockoutMatches.map((m) => ({
         match_number: m.match_number,
-        home_name: m.home_team?.name ?? "?",
-        away_name: m.away_team?.name ?? "?",
+        home_name: m.home_team?.name ?? m.home_slot ?? "TBD",
+        away_name: m.away_team?.name ?? m.away_slot ?? "TBD",
       })),
-    )
+    ].sort((a, b) => a.match_number - b.match_number)
     downloadTemplate(matches)
   }
 
+  const STEPS = [
+    { n: "1", icon: "⬇️", text: <>Descarga la <strong className="text-foreground">plantilla</strong> con los 104 partidos ya cargados.</> },
+    { n: "2", icon: "✏️", text: <>Rellena solo las columnas <strong className="text-foreground">Goles Local</strong> y <strong className="text-foreground">Goles Visitante</strong> (números 0–99).</> },
+    { n: "3", icon: "📂", text: <>Guarda y sube el archivo <strong className="text-foreground">.xlsx</strong>.</> },
+    { n: "4", icon: "✅", text: <>Los marcadores aparecen en el formulario. <strong className="text-foreground">Revísalos y guarda.</strong></> },
+  ]
+
   return (
-    <div className="rounded-xl border border-border/20 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3"
-        style={{ background: "rgba(99,102,241,0.06)", borderBottom: showInstructions ? "1px solid rgba(99,102,241,0.15)" : undefined }}>
-        <div className="flex items-center gap-2">
-          <span className="text-lg">📊</span>
-          <div>
-            <p className="text-sm font-semibold text-foreground leading-tight">Importar desde Excel</p>
-            <p className="text-xs text-muted-foreground">Llena tus 72 predicciones de un jalón</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowInstructions((v) => !v)}
-          className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium flex items-center gap-1"
+    <>
+      {/* Trigger button */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors"
+        style={{ background: "rgba(99,102,241,0.1)", color: "#a5b4fc", borderColor: "rgba(99,102,241,0.25)" }}
+      >
+        📊 Importar desde Excel
+      </button>
+
+      {/* Modal */}
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4"
+          onClick={() => setOpen(false)}
         >
-          {showInstructions ? "Ocultar" : "¿Cómo funciona?"}{" "}
-          <span className="text-base leading-none">{showInstructions ? "▴" : "▾"}</span>
-        </button>
-      </div>
+          <div
+            className="w-full sm:max-w-lg bg-card rounded-t-2xl sm:rounded-2xl border border-border/30 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/20"
+              style={{ background: "rgba(99,102,241,0.08)" }}>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">📊</span>
+                <div>
+                  <p className="font-bold text-foreground text-sm leading-tight">Importar desde Excel</p>
+                  <p className="text-xs text-muted-foreground">Llena tus 104 predicciones de un jalón</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors text-lg leading-none w-8 h-8 flex items-center justify-center rounded-lg hover:bg-foreground/5"
+              >
+                ✕
+              </button>
+            </div>
 
-      {/* Instructions panel */}
-      {showInstructions && (
-        <div className="px-4 py-4 space-y-4 border-b border-border/20"
-          style={{ background: "rgba(99,102,241,0.03)" }}>
+            {/* Body */}
+            <div className="px-5 py-4 space-y-4 overflow-y-auto" style={{ maxHeight: "70vh" }}>
+              {/* Steps */}
+              <ol className="space-y-3">
+                {STEPS.map(({ n, icon, text }) => (
+                  <li key={n} className="flex items-start gap-3">
+                    <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold mt-0.5"
+                      style={{ background: "rgba(99,102,241,0.2)", color: "#818cf8" }}>
+                      {n}
+                    </span>
+                    <span className="text-sm text-muted-foreground leading-relaxed">
+                      <span className="mr-1">{icon}</span>{text}
+                    </span>
+                  </li>
+                ))}
+              </ol>
 
-          {/* Steps */}
-          <ol className="space-y-2.5">
-            {[
-              { n: "1", icon: "⬇️", text: <>Descarga la <strong className="text-foreground">plantilla de Excel</strong> con los 72 partidos ya cargados.</> },
-              { n: "2", icon: "✏️", text: <>Rellena solo las columnas <strong className="text-foreground">Goles Local</strong> y <strong className="text-foreground">Goles Visitante</strong> con números enteros (0–99).</> },
-              { n: "3", icon: "📂", text: <>Guarda el archivo y sube el <strong className="text-foreground">.xlsx</strong> con el botón de abajo.</> },
-              { n: "4", icon: "👀", text: <>Los marcadores aparecerán en el formulario. <strong className="text-foreground">Revísalos</strong> y luego haz clic en "Guardar".</> },
-            ].map(({ n, icon, text }) => (
-              <li key={n} className="flex items-start gap-3">
-                <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                  style={{ background: "rgba(99,102,241,0.2)", color: "#818cf8" }}>
-                  {n}
-                </span>
-                <span className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="mr-1">{icon}</span>{text}
-                </span>
-              </li>
-            ))}
-          </ol>
-
-          {/* Column reference table */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-              Formato de la plantilla
-            </p>
-            <div className="overflow-x-auto rounded-lg border border-border/30">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr style={{ background: "rgba(255,255,255,0.04)" }}>
-                    {["Col A — #", "Col B — Local", "Col C — Visitante", "Col D — Goles Local ✏️", "Col E — Goles Visitante ✏️"].map((h) => (
-                      <th key={h} className="px-2 py-2 text-left font-semibold text-muted-foreground border-b border-border/20"
-                        style={h.includes("✏️") ? { color: "#a5b4fc" } : undefined}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ["1", "México", "Islandia", "2", "0"],
-                    ["2", "Ecuador", "Mali", "1", "1"],
-                    ["3", "EUA", "Serbia", "", ""],
-                  ].map((row, i) => (
-                    <tr key={i} style={{ background: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}>
-                      {row.map((cell, j) => (
-                        <td key={j} className="px-2 py-1.5 border-b border-border/10 font-mono"
-                          style={{ color: j >= 3 ? (cell ? "#a5b4fc" : "#374151") : "#94a3b8" }}>
-                          {cell || <span className="opacity-30">–</span>}
-                        </td>
+              {/* Column reference */}
+              <div className="overflow-x-auto rounded-lg border border-border/30">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr style={{ background: "rgba(255,255,255,0.04)" }}>
+                      {["# Partido", "Local", "Visitante", "Goles Local ✏️", "Goles Visit. ✏️"].map((h) => (
+                        <th key={h} className="px-2 py-2 text-left font-semibold text-muted-foreground border-b border-border/20 whitespace-nowrap"
+                          style={h.includes("✏️") ? { color: "#a5b4fc" } : undefined}>
+                          {h}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1.5">
-              💡 Las columnas A, B y C ya vienen llenas. Solo escribe en D y E.
-            </p>
-          </div>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["1", "Sudáfrica", "México", "1", "2"],
+                      ["2", "Chequia", "Corea del Sur", "0", "0"],
+                      ["3", "Canadá", "Honduras", "", ""],
+                    ].map((row, i) => (
+                      <tr key={i} style={{ background: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent" }}>
+                        {row.map((cell, j) => (
+                          <td key={j} className="px-2 py-1.5 font-mono"
+                            style={{ color: j >= 3 ? (cell ? "#a5b4fc" : "#374151") : "#94a3b8" }}>
+                            {cell || <span className="opacity-30">–</span>}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                💡 Las columnas A, B y C ya vienen llenas. Solo escribe en D y E.
+              </p>
 
-          {/* Warning */}
-          <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 px-3 py-2.5"
-            style={{ background: "rgba(245,158,11,0.05)" }}>
-            <span className="text-sm shrink-0">⚠️</span>
-            <p className="text-xs text-amber-600 dark:text-amber-400 leading-relaxed">
-              La importación <strong>no guarda</strong> automáticamente. Después de importar, haz clic en
-              <strong> "Guardar todas las predicciones"</strong> para confirmar y bloquearlas.
-            </p>
+              {/* Warning */}
+              <div className="flex items-start gap-2 rounded-lg border border-amber-500/20 px-3 py-2.5"
+                style={{ background: "rgba(245,158,11,0.05)" }}>
+                <span className="text-sm shrink-0">⚠️</span>
+                <p className="text-xs text-amber-400 leading-relaxed">
+                  La importación <strong>no guarda</strong> automáticamente. Después de importar, haz clic en <strong>"Guardar"</strong> para confirmarlas.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer actions */}
+            <div className="flex gap-2 px-5 py-4 border-t border-border/20">
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleFile} />
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium border border-border/30 text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
+              >
+                ⬇️ Descargar plantilla
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold border transition-colors disabled:opacity-50"
+                style={{ background: "rgba(99,102,241,0.2)", color: "#a5b4fc", borderColor: "rgba(99,102,241,0.3)" }}
+              >
+                {isLoading ? <><span className="animate-spin">⟳</span> Leyendo...</> : <>📂 Subir .xlsx</>}
+              </button>
+            </div>
           </div>
         </div>
       )}
-
-      {/* Action buttons */}
-      <div className="flex gap-2 p-3">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".xlsx,.xls"
-          className="hidden"
-          onChange={handleFile}
-        />
-        <button
-          type="button"
-          onClick={handleDownloadTemplate}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border border-border/30 text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors"
-        >
-          ⬇️ Descargar plantilla
-        </button>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isLoading}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border transition-colors disabled:opacity-50"
-          style={{ background: "rgba(99,102,241,0.15)", color: "#a5b4fc", borderColor: "rgba(99,102,241,0.3)" }}
-        >
-          {isLoading ? (
-            <><span className="animate-spin">⟳</span> Importando...</>
-          ) : (
-            <>📂 Subir archivo .xlsx</>
-          )}
-        </button>
-      </div>
-    </div>
+    </>
   )
 }
 
@@ -349,12 +364,11 @@ function MatchCard({
 }) {
   const pred = match.prediction
   const hasResult = match.home_score !== null && match.away_score !== null
-  const isLocked = !!pred
 
   return (
     <div className={cn(
       "rounded-xl border p-4 transition-colors",
-      isLocked ? "border-border/30 bg-foreground/[0.02]" : "border-border/10 bg-transparent",
+      pred ? "border-border/30 bg-foreground/[0.02]" : "border-border/10 bg-transparent",
       hasResult && "border-emerald-500/20 bg-emerald-500/5",
     )}>
       <div className="flex items-center justify-between mb-3">
@@ -368,8 +382,8 @@ function MatchCard({
             {pointsLabel(pred.points)}
           </span>
         )}
-        {isLocked && !hasResult && (
-          <span className="text-xs text-muted-foreground">🔒 bloqueado</span>
+        {pred && !hasResult && !disabled && (
+          <span className="text-xs text-muted-foreground">✏️ guardado</span>
         )}
       </div>
 
@@ -388,14 +402,14 @@ function MatchCard({
             key={`${match.id}_home_${importKey}`}
             name={`prediction_${match.id}_home`}
             defaultValue={pred?.predicted_home_score ?? importedHome}
-            disabled={disabled || isLocked}
+            disabled={disabled}
           />
           <span className="text-muted-foreground font-bold text-lg">—</span>
           <ScoreInput
             key={`${match.id}_away_${importKey}`}
             name={`prediction_${match.id}_away`}
             defaultValue={pred?.predicted_away_score ?? importedAway}
-            disabled={disabled || isLocked}
+            disabled={disabled}
           />
         </div>
 
@@ -475,7 +489,7 @@ function GroupSection({
           />
         ))}
       </div>
-      {!disabled && unpredicted > 0 && (
+      {!disabled && (
         <div className="px-4 pb-3 pt-0 flex justify-end">
           <button
             type="button"
@@ -497,12 +511,14 @@ function KnockoutSection({
   round,
   matches,
   disabled,
+  importedPredictions,
   importKey,
   onSectionSave,
 }: {
   round: RoundType
   matches: MatchWithPrediction[]
   disabled: boolean
+  importedPredictions: Record<number, { home: number; away: number }>
   importKey: number
   onSectionSave: (matchIds: number[]) => void
 }) {
@@ -528,11 +544,13 @@ function KnockoutSection({
             key={match.id}
             match={match}
             disabled={disabled}
+            importedHome={importedPredictions[match.id]?.home}
+            importedAway={importedPredictions[match.id]?.away}
             importKey={importKey}
           />
         ))}
       </div>
-      {!disabled && unpredicted > 0 && (
+      {!disabled && (
         <div className="px-4 pb-3 pt-0 flex justify-end">
           <button
             type="button"
@@ -653,7 +671,7 @@ function BonusSection({
             type="submit"
             disabled={isPending}
             className="mt-4 font-semibold"
-            style={{ background: "rgba(254,204,2,0.2)", color: "#fecc02", border: "1px solid rgba(254,204,2,0.3)" }}
+            style={{ background: "color-mix(in srgb, var(--primary) 12%, transparent)", color: "var(--primary)", border: "1px solid color-mix(in srgb, var(--primary) 30%, transparent)" }}
           >
             {isPending ? "Guardando..." : "💾 Guardar predicciones bonus"}
           </Button>
@@ -730,8 +748,7 @@ export function PredictionsForm({
     const filteredFd = new FormData()
     const previews: PredictionPreview[] = []
     for (const match of allMatches) {
-      if (predictionMap[match.id]) continue
-      if (targetIds && !targetIds.has(match.id)) continue
+        if (targetIds && !targetIds.has(match.id)) continue
       const home = fd.get(`prediction_${match.id}_home`)
       const away = fd.get(`prediction_${match.id}_away`)
       if (home === null || home === "" || away === null || away === "") continue
@@ -807,28 +824,24 @@ export function PredictionsForm({
         onCancel={() => setConfirmOpen(false)}
       />
 
-      {/* Bonus section */}
-      <BonusSection allTeams={allTeams} bonus={bonusPrediction} disabled={isClosed} />
-
-      {/* Progress bar + Excel tools */}
+      {/* Progress bar + Excel import button */}
       {!isClosed && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-2 bg-foreground/10 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${(totalPredicted / totalMatchCount) * 100}%`,
-                  background: "linear-gradient(90deg, #8b1a2f, #fecc02)",
-                }}
-              />
-            </div>
-            <span className="text-sm text-muted-foreground shrink-0 font-mono">
-              {totalPredicted}/{totalMatchCount}
-            </span>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-2 bg-foreground/10 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${(totalPredicted / totalMatchCount) * 100}%`,
+                background: "linear-gradient(90deg, var(--primary), var(--accent))",
+              }}
+            />
           </div>
-          <ExcelUploadSection
+          <span className="text-sm text-muted-foreground shrink-0 font-mono">
+            {totalPredicted}/{totalMatchCount}
+          </span>
+          <ExcelImportModal
             groupsWithMatches={groupsWithMatches}
+            knockoutMatches={knockoutMatches}
             onImport={handleImport}
           />
         </div>
@@ -856,6 +869,7 @@ export function PredictionsForm({
               round={round}
               matches={roundMatches}
               disabled={isClosed}
+              importedPredictions={importedPredictions}
               importKey={importKey}
               onSectionSave={handleSectionSave}
             />
@@ -869,13 +883,16 @@ export function PredictionsForm({
               disabled={isPending}
               size="lg"
               className="w-full font-bold shadow-2xl"
-              style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+              style={{ background: "var(--primary)" }}
             >
               {isPending ? "Guardando..." : "💾 Guardar todas las predicciones"}
             </Button>
           </div>
         )}
       </form>
+
+      {/* Bonus section — secondary, shown after main predictions */}
+      <BonusSection allTeams={allTeams} bonus={bonusPrediction} disabled={isClosed} />
     </div>
   )
 }

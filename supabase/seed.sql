@@ -5,6 +5,14 @@
 -- Todos los horarios en ET (UTC-4, horario de verano de la Costa Este)
 -- ============================================================
 
+-- Limpiar datos existentes (seguro correr múltiples veces)
+-- Solo borra fase de grupos; los partidos de eliminatorias los crean las migraciones
+DELETE FROM predictions WHERE match_id IN (SELECT id FROM matches WHERE round = 'group' OR round IS NULL);
+DELETE FROM bonus_predictions;
+DELETE FROM matches WHERE round = 'group' OR round IS NULL;
+DELETE FROM teams;
+DELETE FROM groups;
+
 -- Grupos
 INSERT INTO groups (name) VALUES
   ('A'), ('B'), ('C'), ('D'), ('E'), ('F'),

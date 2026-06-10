@@ -33,10 +33,10 @@ export default async function MainLayout({
           <div className="flex items-center gap-2">
             <span className="text-base">⚽</span>
             <span className="font-display font-bold text-sm tracking-tight text-foreground/60">
-              MUNDIAL <span style={{ color: "#fecc02" }}>2026</span>
+              QUINIELA <span style={{ color: "var(--accent)" }}>TUPPERWARE</span>
             </span>
             <span className="text-muted-foreground/30 text-xs">·</span>
-            <span className="text-xs text-muted-foreground/40">Quiniela de amigos</span>
+            <span className="text-xs text-muted-foreground/40">Mundial 2026</span>
           </div>
           <span className="text-[11px] text-muted-foreground/30 font-mono">© 2026</span>
         </div>

@@ -1,5 +1,6 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
+import { sendNewUserNotificationToAdmin } from "@/lib/email"
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -11,18 +12,36 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser()
-      const displayName = (user?.user_metadata?.display_name as string | undefined)?.trim()
+      if (!user) return NextResponse.redirect(`${origin}${next}`)
 
-      if (displayName && user) {
-        const service = createServiceClient()
+      const displayName = (user.user_metadata?.display_name as string | undefined)?.trim()
+      const service = createServiceClient()
+
+      const { data: existing } = await service
+        .from("profiles")
+        .select("id")
+        .eq("id", user.id)
+        .single()
+
+      const isNew = !existing
+
+      if (isNew) {
+        // New user: set profile name from metadata if provided
         await service.from("profiles").upsert(
-          { id: user.id, display_name: displayName },
+          { id: user.id, ...(displayName ? { display_name: displayName } : {}) },
           { onConflict: "id" },
         )
-        const sep = next.includes("?") ? "&" : "?"
-        return NextResponse.redirect(
-          `${origin}${next}${sep}bienvenida=${encodeURIComponent(displayName)}`,
-        )
+        // Fire-and-forget: notify admin regardless of whether name was provided
+        ;(async () => {
+          try { await sendNewUserNotificationToAdmin(user.email ?? "desconocido") } catch {}
+        })()
+
+        if (displayName) {
+          const sep = next.includes("?") ? "&" : "?"
+          return NextResponse.redirect(
+            `${origin}${next}${sep}bienvenida=${encodeURIComponent(displayName)}`,
+          )
+        }
       }
 
       return NextResponse.redirect(`${origin}${next}`)

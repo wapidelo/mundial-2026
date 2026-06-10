@@ -61,7 +61,7 @@ export async function savePredictions(formData: FormData) {
 
   const { error } = await supabase
     .from("predictions")
-    .upsert(predictionsToUpsert, { onConflict: "user_id,match_id", ignoreDuplicates: true })
+    .upsert(predictionsToUpsert, { onConflict: "user_id,match_id" })
 
   if (error) throw new Error(error.message)
 
