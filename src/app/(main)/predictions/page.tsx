@@ -71,7 +71,7 @@ export default async function PredictionsPage() {
                 : "Fase de grupos cerrada — espera la siguiente ronda"}
           </p>
         </div>
-        {!isClosed && (
+        {(!isClosed || openRounds.length > 0) && (
           <div className="hidden md:flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Predicciones:</span>
             <span className="font-bold text-foreground font-mono">

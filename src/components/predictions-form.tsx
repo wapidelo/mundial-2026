@@ -110,10 +110,14 @@ function ConfirmDialog({
 function ExcelImportModal({
   groupsWithMatches,
   knockoutMatches,
+  isClosed,
+  openRounds,
   onImport,
 }: {
   groupsWithMatches: GroupWithMatches[]
   knockoutMatches: MatchWithPrediction[]
+  isClosed: boolean
+  openRounds: string[]
   onImport: (predictions: Record<number, { home: number; away: number }>) => void
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -149,25 +153,37 @@ function ExcelImportModal({
 
   async function handleDownloadTemplate() {
     const { downloadTemplate } = await import("@/lib/excel")
-    const matches = [
-      ...groupsWithMatches.flatMap((g) =>
+    // Only include matches relevant to the current phase
+    let matches: { match_number: number; home_name: string; away_name: string }[]
+    if (!isClosed) {
+      // Pre-tournament: group stage only
+      matches = groupsWithMatches.flatMap((g) =>
         g.matches.map((m) => ({
           match_number: m.match_number,
           home_name: m.home_team?.name ?? "?",
           away_name: m.away_team?.name ?? "?",
         })),
-      ),
-      ...knockoutMatches.map((m) => ({
-        match_number: m.match_number,
-        home_name: m.home_team?.name ?? m.home_slot ?? "TBD",
-        away_name: m.away_team?.name ?? m.away_slot ?? "TBD",
-      })),
-    ].sort((a, b) => a.match_number - b.match_number)
+      )
+    } else {
+      // Post-tournament: open knockout rounds only
+      matches = knockoutMatches
+        .filter((m) => openRounds.includes(m.round))
+        .map((m) => ({
+          match_number: m.match_number,
+          home_name: m.home_team?.name ?? m.home_slot ?? "TBD",
+          away_name: m.away_team?.name ?? m.away_slot ?? "TBD",
+        }))
+    }
+    matches.sort((a, b) => a.match_number - b.match_number)
     downloadTemplate(matches)
   }
 
+  const phaseMatchCount = !isClosed
+    ? groupsWithMatches.reduce((n, g) => n + g.matches.length, 0)
+    : knockoutMatches.filter((m) => openRounds.includes(m.round)).length
+
   const STEPS = [
-    { n: "1", icon: "⬇️", text: <>Descarga la <strong className="text-foreground">plantilla</strong> con los 104 partidos ya cargados.</> },
+    { n: "1", icon: "⬇️", text: <>Descarga la <strong className="text-foreground">plantilla</strong> con los {phaseMatchCount} partidos ya cargados.</> },
     { n: "2", icon: "✏️", text: <>Rellena solo las columnas <strong className="text-foreground">Goles Local</strong> y <strong className="text-foreground">Goles Visitante</strong> (números 0–99).</> },
     { n: "3", icon: "📂", text: <>Guarda y sube el archivo <strong className="text-foreground">.xlsx</strong>.</> },
     { n: "4", icon: "✅", text: <>Los marcadores aparecen en el formulario. <strong className="text-foreground">Revísalos y guarda.</strong></> },
@@ -202,7 +218,7 @@ function ExcelImportModal({
                 <span className="text-xl">📊</span>
                 <div>
                   <p className="font-bold text-foreground text-sm leading-tight">Importar desde Excel</p>
-                  <p className="text-xs text-muted-foreground">Llena tus 104 predicciones de un jalón</p>
+                  <p className="text-xs text-muted-foreground">Llena tus {phaseMatchCount} predicciones de un jalón</p>
                 </div>
               </div>
               <button
@@ -827,13 +843,13 @@ export function PredictionsForm({
       />
 
       {/* Progress bar + Excel import button */}
-      {!isClosed && (
+      {(!isClosed || openRounds.length > 0) && (
         <div className="flex items-center gap-3">
           <div className="flex-1 h-2 bg-foreground/10 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
-                width: `${(totalPredicted / totalMatchCount) * 100}%`,
+                width: `${Math.min((totalPredicted / totalMatchCount) * 100, 100)}%`,
                 background: "linear-gradient(90deg, var(--primary), var(--accent))",
               }}
             />
@@ -844,6 +860,8 @@ export function PredictionsForm({
           <ExcelImportModal
             groupsWithMatches={groupsWithMatches}
             knockoutMatches={knockoutMatches}
+            isClosed={isClosed}
+            openRounds={openRounds}
             onImport={handleImport}
           />
         </div>
@@ -890,7 +908,7 @@ export function PredictionsForm({
           )
         })}
 
-        {!isClosed && (
+        {(!isClosed || openRounds.length > 0) && (
           <div className="sticky bottom-4">
             <Button
               type="submit"

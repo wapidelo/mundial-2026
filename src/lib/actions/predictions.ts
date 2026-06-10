@@ -20,11 +20,6 @@ export async function savePredictions(formData: FormData) {
   const { data: profile } = await supabase.from("profiles").select("active").eq("id", user.id).single()
   if (profile?.active === false) throw new Error("Tu cuenta no está activa en esta quiniela")
 
-  const tournamentStart = new Date(process.env.TOURNAMENT_START ?? "2026-06-11T19:00:00Z")
-  if (new Date() >= tournamentStart) {
-    throw new Error("Las predicciones están cerradas")
-  }
-
   // Parse all predictions from formData
   // Expected fields: prediction_<matchId>_home and prediction_<matchId>_away
   const predictionsToUpsert: { user_id: string; match_id: number; predicted_home_score: number; predicted_away_score: number }[] = []
@@ -59,9 +54,39 @@ export async function savePredictions(formData: FormData) {
 
   if (predictionsToUpsert.length === 0) return { ok: true }
 
+  // Phase validation: before tournament start, only group stage is allowed.
+  // After tournament start, only matches from admin-opened knockout rounds.
+  const tournamentStart = new Date(process.env.TOURNAMENT_START ?? "2026-06-11T19:00:00Z")
+  let finalPredictions = predictionsToUpsert
+
+  if (new Date() >= tournamentStart) {
+    const service = createServiceClient()
+    const { data: settingsRow } = await service
+      .from("settings")
+      .select("value")
+      .eq("key", "open_rounds")
+      .single()
+    const openRounds: string[] = (settingsRow?.value ?? []) as string[]
+    if (openRounds.length === 0) throw new Error("Las predicciones están cerradas")
+
+    const submittedIds = predictionsToUpsert.map((p) => p.match_id)
+    const { data: matchRows } = await service
+      .from("matches")
+      .select("id, round")
+      .in("id", submittedIds)
+    const roundMap = new Map<number, string>(
+      (matchRows ?? []).map((m) => [m.id as number, m.round as string]),
+    )
+    finalPredictions = predictionsToUpsert.filter((p) => {
+      const round = roundMap.get(p.match_id)
+      return round && openRounds.includes(round)
+    })
+    if (finalPredictions.length === 0) throw new Error("Las predicciones están cerradas para esa ronda")
+  }
+
   const { error } = await supabase
     .from("predictions")
-    .upsert(predictionsToUpsert, { onConflict: "user_id,match_id" })
+    .upsert(finalPredictions, { onConflict: "user_id,match_id" })
 
   if (error) throw new Error(error.message)
 
