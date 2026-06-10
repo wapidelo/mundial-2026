@@ -83,10 +83,8 @@ export function Nav({
         <div className="max-w-6xl mx-auto px-4 flex items-center gap-3 h-14">
           {/* Brand */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <span className="text-xl">⚽</span>
-            <span className="font-display font-bold text-foreground text-lg leading-none hidden sm:block tracking-tight">
-              TUPPERWARE <span style={{ color: "var(--accent)" }}>2026</span>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-tupperware.jpeg" alt="Tupperware" className="h-9 w-auto object-contain" />
           </Link>
 
           {/* Desktop links */}

@@ -164,22 +164,19 @@ export default function LoginPage() {
           className="mb-8 text-center relative z-10"
           style={{ animation: "fadeDown 0.7s ease both" }}
         >
-          <div style={{ animation: "ballSpin 6s linear infinite", display: "inline-block" }}>
-            <span style={{ fontSize: "4rem", lineHeight: 1 }}>⚽</span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-tupperware.jpeg"
+            alt="Tupperware"
+            style={{ height: "clamp(100px, 20vw, 160px)", width: "auto", objectFit: "contain", borderRadius: "1rem" }}
+          />
 
           <h1
-            className="font-display font-black tracking-tight text-white mt-3"
-            style={{ fontSize: "clamp(2rem, 8vw, 3.2rem)", lineHeight: 1, letterSpacing: "-0.02em" }}
+            className="font-display font-black tracking-tight text-white mt-4"
+            style={{ fontSize: "clamp(1.5rem, 6vw, 2.4rem)", lineHeight: 1, letterSpacing: "-0.02em" }}
           >
-            QUINIELA
+            QUINIELA <span style={{ color: "var(--accent)" }}>2026</span>
           </h1>
-          <p
-            className="font-display font-bold tracking-widest text-lg mt-0.5"
-            style={{ color: "var(--accent)", letterSpacing: "0.15em" }}
-          >
-            TUPPERWARE 2026
-          </p>
 
           {/* Host countries */}
           <div className="flex items-center justify-center gap-3 mt-4">
