@@ -85,7 +85,7 @@ export function Nav({
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <span className="text-xl">⚽</span>
             <span className="font-display font-bold text-foreground text-lg leading-none hidden sm:block tracking-tight">
-              MUNDIAL <span style={{ color: "#fecc02" }}>2026</span>
+              TUPPERWARE <span style={{ color: "var(--accent)" }}>2026</span>
             </span>
           </Link>
 
@@ -134,7 +134,7 @@ export function Nav({
               >
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                  style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+                  style={{ background: "linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 70%, black))" }}
                 >
                   {displayName.charAt(0).toUpperCase()}
                 </div>
@@ -203,7 +203,7 @@ export function Nav({
                 >
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                    style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+                    style={{ background: "linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 70%, black))" }}
                   >
                     {displayName.charAt(0).toUpperCase()}
                   </div>

@@ -39,7 +39,9 @@ type Step = "email" | "new_user" | "returning"
 
 export default function LoginPage() {
   const [step, setStep] = useState<Step>("email")
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("quiniela_email") ?? "" : ""
+  )
   const [name, setName] = useState("")
   const [returnName, setReturnName] = useState("")
   const [checking, setChecking] = useState(false)
@@ -68,7 +70,7 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     const supabase = createClient()
-    const displayName = step === "new_user" ? name.trim() : returnName
+    const displayName = step === "new_user" ? name.trim() : undefined
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -80,6 +82,7 @@ export default function LoginPage() {
     if (error) {
       toast.error(error.message)
     } else {
+      localStorage.setItem("quiniela_email", email)
       setSent(true)
     }
   }
@@ -149,7 +152,7 @@ export default function LoginPage() {
             width: 480,
             height: 480,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(139,26,47,0.18) 0%, transparent 70%)",
+            background: "radial-gradient(circle, color-mix(in srgb, var(--primary) 18%, transparent) 0%, transparent 70%)",
             top: "50%",
             left: "50%",
             transform: "translate(-50%,-50%)",
@@ -173,9 +176,9 @@ export default function LoginPage() {
           </h1>
           <p
             className="font-display font-bold tracking-widest text-lg mt-0.5"
-            style={{ color: "#fecc02", letterSpacing: "0.15em" }}
+            style={{ color: "var(--accent)", letterSpacing: "0.15em" }}
           >
-            MUNDIAL 2026
+            TUPPERWARE 2026
           </p>
 
           {/* Host countries */}
@@ -251,7 +254,7 @@ export default function LoginPage() {
                     type="submit"
                     disabled={checking}
                     className="w-full h-11 font-semibold text-white tracking-wide"
-                    style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+                    style={{ background: "linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 70%, black))" }}
                   >
                     {checking ? "Verificando..." : "Continuar →"}
                   </Button>
@@ -284,7 +287,7 @@ export default function LoginPage() {
                   type="submit"
                   disabled={loading || !name.trim()}
                   className="w-full h-11 font-semibold text-white tracking-wide"
-                  style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+                  style={{ background: "linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 70%, black))" }}
                 >
                   {loading ? "Enviando..." : "Entrar a la quiniela →"}
                 </Button>
@@ -300,7 +303,7 @@ export default function LoginPage() {
             ) : (
               /* ── Step 2b: Returning user ── */
               <form onSubmit={handleSendLink} className="space-y-4" style={{ animation: "fadeUp 0.35s ease both" }}>
-                <div className="text-center mb-2">
+                <div className="text-center mb-4">
                   <div style={{ fontSize: "1.8rem" }}>👋</div>
                   <h2 className="text-xl font-semibold text-white mt-2 mb-1">
                     ¡Hola de nuevo{returnName ? `, ${returnName}` : ""}!
@@ -313,8 +316,9 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
+                  autoFocus
                   className="w-full h-11 font-semibold text-white tracking-wide"
-                  style={{ background: "linear-gradient(135deg, #8b1a2f, #c0392b)" }}
+                  style={{ background: "linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 70%, black))" }}
                 >
                   {loading ? "Enviando..." : "Enviar enlace →"}
                 </Button>

@@ -21,7 +21,7 @@ const barlowCondensed = Barlow_Condensed({
 })
 
 export const metadata: Metadata = {
-  title: "Quiniela Mundial 2026",
+  title: "Quiniela Tupperware 2026",
   description: "Predice los resultados del Mundial de Fútbol 2026",
 }
 
