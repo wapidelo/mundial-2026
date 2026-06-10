@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { setBonusResult, assignTeamToMatch } from "@/lib/actions/admin"
+import { setBonusResult, assignTeamToMatch, toggleRound } from "@/lib/actions/admin"
 import { AdminMatchRow } from "@/components/admin-match-row"
 import type { Match, Group, RoundType } from "@/lib/types"
 
@@ -27,14 +27,17 @@ const KNOCKOUT_ORDER: RoundType[] = ["round_of_32", "round_of_16", "quarter_fina
 export default async function AdminMatchesPage() {
   const supabase = await createClient()
 
-  const [{ data: groups }, { data: matches }, { data: teams }] = await Promise.all([
+  const [{ data: groups }, { data: matches }, { data: teams }, { data: settingsRow }] = await Promise.all([
     supabase.from("groups").select("*").order("name"),
     supabase
       .from("matches")
       .select("*, home_team:teams!home_team_id(name,flag_emoji), away_team:teams!away_team_id(name,flag_emoji)")
       .order("match_number"),
     supabase.from("teams").select("id, name, flag_emoji").order("name"),
+    supabase.from("settings").select("value").eq("key", "open_rounds").single(),
   ])
+
+  const openRounds: string[] = (settingsRow?.value ?? []) as string[]
 
   type GroupWithMatches = Group & { matches: MatchWithTeams[] }
   const groupsWithMatches: GroupWithMatches[] = (groups ?? []).map((g) => ({
@@ -62,6 +65,54 @@ export default async function AdminMatchesPage() {
           Al guardar un resultado los puntos se recalculan automáticamente.{" "}
           <span className="text-emerald-400 font-mono font-bold">{finished}/{allMatches.length}</span> partidos finalizados.
         </p>
+      </div>
+
+      {/* Phase control — open/close knockout rounds for predictions */}
+      <div className="rounded-xl border border-pink-500/20 overflow-hidden">
+        <div className="px-5 py-3 flex items-center gap-3"
+          style={{ background: "rgba(236,72,153,0.07)", borderBottom: "1px solid rgba(236,72,153,0.15)" }}>
+          <span className="text-lg">🔓</span>
+          <div>
+            <h2 className="font-bold text-foreground leading-tight">Fases de Predicciones</h2>
+            <p className="text-xs text-muted-foreground">Activa cada ronda cuando sea momento de predecirla</p>
+          </div>
+        </div>
+        <div className="p-4 space-y-2">
+          {KNOCKOUT_ORDER.map((round) => {
+            const isOpen = openRounds.includes(round)
+            return (
+              <div key={round} className="flex items-center justify-between gap-4 rounded-lg px-4 py-3"
+                style={{
+                  background: isOpen ? "rgba(16,185,129,0.06)" : "rgba(255,255,255,0.02)",
+                  border: isOpen ? "1px solid rgba(16,185,129,0.2)" : "1px solid rgba(255,255,255,0.06)",
+                }}>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-bold ${isOpen ? "text-emerald-400" : "text-muted-foreground"}`}>
+                    {ROUND_LABELS[round]}
+                  </span>
+                  {isOpen && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                      style={{ background: "rgba(16,185,129,0.15)", color: "#10b981" }}>
+                      ABIERTA
+                    </span>
+                  )}
+                </div>
+                <form action={toggleRound}>
+                  <input type="hidden" name="round" value={round} />
+                  <input type="hidden" name="open" value={isOpen ? "false" : "true"} />
+                  <button type="submit"
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110"
+                    style={isOpen
+                      ? { background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }
+                      : { background: "rgba(16,185,129,0.15)", color: "#10b981", border: "1px solid rgba(16,185,129,0.25)" }
+                    }>
+                    {isOpen ? "🔒 Cerrar" : "🔓 Abrir"}
+                  </button>
+                </form>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Bonus results */}

@@ -12,7 +12,7 @@ export default async function PredictionsPage() {
   const tournamentStart = new Date(process.env.TOURNAMENT_START ?? "2026-06-11T19:00:00Z")
   const isClosed = new Date() >= tournamentStart
 
-  const [{ data: groups }, { data: teams }, { data: matches }, { data: knockouts }, { data: predictions }, { data: bonusPred }] =
+  const [{ data: groups }, { data: teams }, { data: matches }, { data: knockouts }, { data: predictions }, { data: bonusPred }, { data: settingsRow }] =
     await Promise.all([
       supabase.from("groups").select("*").order("name"),
       supabase.from("teams").select("*, groups(name)").order("name"),
@@ -28,7 +28,10 @@ export default async function PredictionsPage() {
         .order("match_number"),
       supabase.from("predictions").select("*").eq("user_id", user!.id),
       supabase.from("bonus_predictions").select("*").eq("user_id", user!.id).single(),
+      supabase.from("settings").select("value").eq("key", "open_rounds").single(),
     ])
+
+  const openRounds: string[] = (settingsRow?.value ?? []) as string[]
 
   // Build groups with matches
   const groupsWithMatches: GroupWithMatches[] = (groups ?? []).map((g) => ({
@@ -52,7 +55,8 @@ export default async function PredictionsPage() {
     prediction: predictions?.find((p) => p.match_id === m.id),
   }))
 
-  const totalMatchCount = (matches?.length ?? 0) + (knockouts?.length ?? 0)
+  const openKnockoutCount = (knockouts ?? []).filter((m) => openRounds.includes(m.round)).length
+  const totalMatchCount = (matches?.length ?? 0) + openKnockoutCount
 
   return (
     <div>
@@ -60,9 +64,11 @@ export default async function PredictionsPage() {
         <div>
           <h1 className="font-display text-4xl font-bold text-foreground tracking-tight">🎯 MIS PREDICCIONES</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {isClosed
-              ? "Las predicciones están cerradas — el torneo ya comenzó"
-              : `Predice los ${totalMatchCount} partidos antes del 11 jun 2026`}
+            {!isClosed
+              ? `Predice los ${totalMatchCount} partidos de fase de grupos antes del 11 jun 2026`
+              : openRounds.length > 0
+                ? `${openRounds.length === 1 ? "Nueva ronda abierta" : `${openRounds.length} rondas abiertas`} — ¡predice ahora!`
+                : "Fase de grupos cerrada — espera la siguiente ronda"}
           </p>
         </div>
         {!isClosed && (
@@ -76,11 +82,11 @@ export default async function PredictionsPage() {
         )}
       </div>
 
-      {isClosed ? (
+      {isClosed && openRounds.length === 0 ? (
         <div className="mb-6 p-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 text-sm">
-          🔒 Las predicciones cerraron el 11 de junio. Puedes ver tus predicciones pero ya no puedes modificarlas.
+          🔒 Fase de grupos cerrada. Cuando empiece la siguiente ronda el admin la habilitará aquí.
         </div>
-      ) : (
+      ) : isClosed && openRounds.length > 0 ? null : (
         <DeadlineBanner tournamentStart={process.env.TOURNAMENT_START ?? "2026-06-11T19:00:00Z"} />
       )}
 
@@ -91,6 +97,7 @@ export default async function PredictionsPage() {
         bonusPrediction={bonusPred ?? null}
         allTeams={(teams ?? []) as Team[]}
         isClosed={isClosed}
+        openRounds={openRounds}
         userId={user!.id}
         totalMatchCount={totalMatchCount}
       />

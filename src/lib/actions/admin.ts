@@ -156,6 +156,34 @@ export async function toggleUserActive(formData: FormData) {
 
 }
 
+export async function toggleRound(formData: FormData) {
+  await assertAdmin()
+  const round = formData.get("round") as string
+  const open = formData.get("open") === "true"
+
+  const service = createServiceClient()
+
+  const { data: current } = await service
+    .from("settings")
+    .select("value")
+    .eq("key", "open_rounds")
+    .single()
+
+  const rounds: string[] = (current?.value ?? []) as string[]
+  const updated = open
+    ? Array.from(new Set([...rounds, round]))
+    : rounds.filter((r) => r !== round)
+
+  const { error } = await service
+    .from("settings")
+    .upsert({ key: "open_rounds", value: updated })
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath("/admin/matches")
+  revalidatePath("/predictions")
+}
+
 const AssignTeamSchema = z.object({
   match_id: z.coerce.number().int().positive(),
   side: z.enum(["home", "away"]),

@@ -18,7 +18,7 @@ export async function savePredictions(formData: FormData) {
   if (!user) throw new Error("No autenticado")
 
   const { data: profile } = await supabase.from("profiles").select("active").eq("id", user.id).single()
-  if (!profile?.active) throw new Error("Tu cuenta no está activa en esta quiniela")
+  if (profile?.active === false) throw new Error("Tu cuenta no está activa en esta quiniela")
 
   const tournamentStart = new Date(process.env.TOURNAMENT_START ?? "2026-06-11T19:00:00Z")
   if (new Date() >= tournamentStart) {
@@ -137,7 +137,7 @@ export async function saveBonusPredictions(formData: FormData) {
   if (!user) throw new Error("No autenticado")
 
   const { data: profile } = await supabase.from("profiles").select("active").eq("id", user.id).single()
-  if (!profile?.active) throw new Error("Tu cuenta no está activa en esta quiniela")
+  if (profile?.active === false) throw new Error("Tu cuenta no está activa en esta quiniela")
 
   const tournamentStart = new Date(process.env.TOURNAMENT_START ?? "2026-06-11T19:00:00Z")
   if (new Date() >= tournamentStart) {

@@ -690,6 +690,7 @@ export function PredictionsForm({
   bonusPrediction,
   allTeams,
   isClosed,
+  openRounds,
   userId,
   totalMatchCount,
 }: {
@@ -699,6 +700,7 @@ export function PredictionsForm({
   bonusPrediction: BonusPrediction | null
   allTeams: Team[]
   isClosed: boolean
+  openRounds: string[]
   userId: string
   totalMatchCount: number
 }) {
@@ -860,15 +862,27 @@ export function PredictionsForm({
           />
         ))}
 
+        {isClosed && openRounds.length === 0 && (
+          <div className="rounded-xl border border-border/20 p-6 text-center"
+            style={{ background: "rgba(255,255,255,0.02)" }}>
+            <span className="text-3xl mb-3 block">⏳</span>
+            <p className="font-bold text-foreground mb-1">Esperando siguiente fase</p>
+            <p className="text-muted-foreground text-sm">
+              La ronda eliminatoria se habilitará cuando el administrador la abra.
+            </p>
+          </div>
+        )}
+
         {KNOCKOUT_ORDER.map((round) => {
           const roundMatches = knockoutMatches.filter((m) => m.round === round)
           if (roundMatches.length === 0) return null
+          if (!openRounds.includes(round)) return null
           return (
             <KnockoutSection
               key={round}
               round={round}
               matches={roundMatches}
-              disabled={isClosed}
+              disabled={false}
               importedPredictions={importedPredictions}
               importKey={importKey}
               onSectionSave={handleSectionSave}
