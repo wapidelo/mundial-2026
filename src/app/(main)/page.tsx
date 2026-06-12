@@ -5,14 +5,26 @@ import { Button } from "@/components/ui/button"
 import { Countdown } from "@/components/countdown"
 import { AnimatedNumber } from "@/components/animated-number"
 import { WelcomeToast } from "@/components/welcome-toast"
+import { TodayMatchesButton } from "@/components/today-matches-button"
+import type { MatchWithTeams } from "@/components/matches-realtime"
 
 export default async function HomePage() {
   const supabase = await createClient()
 
-  const [{ count: playerCount }, { count: predictionCount }, { count: matchCount }] = await Promise.all([
+  // Window wide enough to cover "today" in any user timezone; client filters precisely
+  const windowStart = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+  const windowEnd = new Date(Date.now() + 48 * 3600 * 1000).toISOString()
+
+  const [{ count: playerCount }, { count: predictionCount }, { count: matchCount }, { data: nearbyMatches }] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("predictions").select("*", { count: "exact", head: true }),
     supabase.from("matches").select("*", { count: "exact", head: true }),
+    supabase
+      .from("matches")
+      .select("*, home_team:teams!home_team_id(name,flag_emoji), away_team:teams!away_team_id(name,flag_emoji)")
+      .gte("scheduled_at", windowStart)
+      .lte("scheduled_at", windowEnd)
+      .order("scheduled_at"),
   ])
 
   const tournamentStart = process.env.TOURNAMENT_START ?? "2026-06-11T19:00:00Z"
@@ -64,7 +76,7 @@ export default async function HomePage() {
 
           <Countdown targetDate={tournamentStart} />
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center">
             <Link href="/predictions">
               <Button size="lg" className="font-bold px-8 h-12 text-base text-white"
                 style={{
@@ -74,6 +86,7 @@ export default async function HomePage() {
                 🎯 Mis predicciones
               </Button>
             </Link>
+            <TodayMatchesButton matches={(nearbyMatches ?? []) as MatchWithTeams[]} />
             <Link href="/estadisticas">
               <Button size="lg" variant="outline"
                 className="font-semibold h-12 text-base">

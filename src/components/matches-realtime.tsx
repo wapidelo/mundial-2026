@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import type { Match, Group, RoundType } from "@/lib/types"
 
-type MatchWithTeams = Match & {
+export type MatchWithTeams = Match & {
   home_team: { name: string; flag_emoji: string } | null
   away_team: { name: string; flag_emoji: string } | null
   home_slot: string | null
@@ -154,7 +154,7 @@ const ROUND_LABELS: Record<RoundType, string> = {
 
 const KNOCKOUT_ORDER: RoundType[] = ["round_of_32", "round_of_16", "quarter_final", "semi_final", "third_place", "final"]
 
-function MatchRow({
+export function MatchRow({
   match,
   flashMatchId,
 }: {
