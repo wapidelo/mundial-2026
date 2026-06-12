@@ -67,21 +67,24 @@ export async function savePredictions(formData: FormData) {
       .eq("key", "open_rounds")
       .single()
     const openRounds: string[] = (settingsRow?.value ?? []) as string[]
-    if (openRounds.length === 0) throw new Error("Las predicciones están cerradas")
 
     const submittedIds = predictionsToUpsert.map((p) => p.match_id)
     const { data: matchRows } = await service
       .from("matches")
-      .select("id, round")
+      .select("id, round, scheduled_at")
       .in("id", submittedIds)
-    const roundMap = new Map<number, string>(
-      (matchRows ?? []).map((m) => [m.id as number, m.round as string]),
-    )
+
+    const now = new Date()
     finalPredictions = predictionsToUpsert.filter((p) => {
-      const round = roundMap.get(p.match_id)
-      return round && openRounds.includes(round)
+      const match = matchRows?.find((m) => m.id === p.match_id)
+      if (!match) return false
+      if ((match.round as string) === "group") {
+        // Allow group predictions as long as the match hasn't started yet
+        return new Date(match.scheduled_at as string) > now
+      }
+      return openRounds.includes(match.round as string)
     })
-    if (finalPredictions.length === 0) throw new Error("Las predicciones están cerradas para esa ronda")
+    if (finalPredictions.length === 0) throw new Error("Las predicciones están cerradas para esos partidos")
   }
 
   const { error } = await supabase

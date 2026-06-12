@@ -83,7 +83,7 @@ function ConfirmDialog({
         </div>
 
         <p className="text-indigo-400 text-xs mb-4 text-center font-medium">
-          ✏️ Puedes editar tus predicciones hasta el 11 de junio.
+          ✏️ Solo puedes editar hasta que empiece cada partido.
         </p>
         <div className="flex gap-3">
           <button
@@ -153,34 +153,32 @@ function ExcelImportModal({
 
   async function handleDownloadTemplate() {
     const { downloadTemplate } = await import("@/lib/excel")
-    // Only include matches relevant to the current phase
-    let matches: { match_number: number; home_name: string; away_name: string }[]
-    if (!isClosed) {
-      // Pre-tournament: group stage only
-      matches = groupsWithMatches.flatMap((g) =>
-        g.matches.map((m) => ({
+    const now = new Date()
+    // Upcoming group matches + open knockout matches
+    const upcomingGroup = groupsWithMatches.flatMap((g) =>
+      g.matches
+        .filter((m) => new Date(m.scheduled_at) > now)
+        .map((m) => ({
           match_number: m.match_number,
           home_name: m.home_team?.name ?? "?",
           away_name: m.away_team?.name ?? "?",
         })),
-      )
-    } else {
-      // Post-tournament: open knockout rounds only
-      matches = knockoutMatches
-        .filter((m) => openRounds.includes(m.round))
-        .map((m) => ({
-          match_number: m.match_number,
-          home_name: m.home_team?.name ?? m.home_slot ?? "TBD",
-          away_name: m.away_team?.name ?? m.away_slot ?? "TBD",
-        }))
-    }
-    matches.sort((a, b) => a.match_number - b.match_number)
+    )
+    const openKnockout = knockoutMatches
+      .filter((m) => openRounds.includes(m.round))
+      .map((m) => ({
+        match_number: m.match_number,
+        home_name: m.home_team?.name ?? m.home_slot ?? "TBD",
+        away_name: m.away_team?.name ?? m.away_slot ?? "TBD",
+      }))
+    const matches = [...upcomingGroup, ...openKnockout].sort((a, b) => a.match_number - b.match_number)
     downloadTemplate(matches)
   }
 
-  const phaseMatchCount = !isClosed
-    ? groupsWithMatches.reduce((n, g) => n + g.matches.length, 0)
-    : knockoutMatches.filter((m) => openRounds.includes(m.round)).length
+  const now = new Date()
+  const phaseMatchCount =
+    groupsWithMatches.reduce((n, g) => n + g.matches.filter((m) => new Date(m.scheduled_at) > now).length, 0) +
+    knockoutMatches.filter((m) => openRounds.includes(m.round)).length
 
   const STEPS = [
     { n: "1", icon: "⬇️", text: <>Descarga la <strong className="text-foreground">plantilla</strong> con los {phaseMatchCount} partidos ya cargados.</> },
@@ -457,19 +455,18 @@ function MatchCard({
 
 function GroupSection({
   group,
-  disabled,
   importedPredictions,
   importKey,
   onSectionSave,
 }: {
   group: GroupWithMatches
-  disabled: boolean
   importedPredictions: Record<number, { home: number; away: number }>
   importKey: number
   onSectionSave: (matchIds: number[]) => void
 }) {
+  const now = new Date()
   const predicted = group.matches.filter((m) => m.prediction).length
-  const unpredicted = group.matches.filter((m) => !m.prediction).length
+  const hasOpenMatch = group.matches.some((m) => new Date(m.scheduled_at) > now)
   return (
     <details open className="rounded-xl border border-border/20 overflow-hidden">
       <summary
@@ -498,18 +495,18 @@ function GroupSection({
           <MatchCard
             key={match.id}
             match={match}
-            disabled={disabled}
+            disabled={new Date(match.scheduled_at) <= now}
             importedHome={importedPredictions[match.id]?.home}
             importedAway={importedPredictions[match.id]?.away}
             importKey={importKey}
           />
         ))}
       </div>
-      {!disabled && (
+      {hasOpenMatch && (
         <div className="px-4 pb-3 pt-0 flex justify-end">
           <button
             type="button"
-            onClick={() => onSectionSave(group.matches.map((m) => m.id))}
+            onClick={() => onSectionSave(group.matches.filter((m) => new Date(m.scheduled_at) > now).map((m) => m.id))}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:brightness-110"
             style={{ background: "rgba(139,26,47,0.2)", color: "#fca5a5", border: "1px solid rgba(139,26,47,0.3)" }}
           >
@@ -709,6 +706,7 @@ export function PredictionsForm({
   openRounds,
   userId,
   totalMatchCount,
+  hasAnyOpenPrediction,
 }: {
   groupsWithMatches: GroupWithMatches[]
   knockoutMatches: MatchWithPrediction[]
@@ -719,6 +717,7 @@ export function PredictionsForm({
   openRounds: string[]
   userId: string
   totalMatchCount: number
+  hasAnyOpenPrediction: boolean
 }) {
   const formRef = useRef<HTMLFormElement>(null)
   const [isPending, startTransition] = useTransition()
@@ -843,7 +842,7 @@ export function PredictionsForm({
       />
 
       {/* Progress bar + Excel import button */}
-      {(!isClosed || openRounds.length > 0) && (
+      {hasAnyOpenPrediction && (
         <div className="flex items-center gap-3">
           <div className="flex-1 h-2 bg-foreground/10 rounded-full overflow-hidden">
             <div
@@ -873,14 +872,13 @@ export function PredictionsForm({
           <GroupSection
             key={group.id}
             group={group}
-            disabled={isClosed}
             importedPredictions={importedPredictions}
             importKey={importKey}
             onSectionSave={handleSectionSave}
           />
         ))}
 
-        {isClosed && openRounds.length === 0 && (
+        {!hasAnyOpenPrediction && (
           <div className="rounded-xl border border-border/20 p-6 text-center"
             style={{ background: "rgba(255,255,255,0.02)" }}>
             <span className="text-3xl mb-3 block">⏳</span>
@@ -908,7 +906,7 @@ export function PredictionsForm({
           )
         })}
 
-        {(!isClosed || openRounds.length > 0) && (
+        {hasAnyOpenPrediction && (
           <div className="sticky bottom-4">
             <Button
               type="submit"
