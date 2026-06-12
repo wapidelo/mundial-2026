@@ -248,6 +248,7 @@ export function MatchesRealtime({
   const [connected, setConnected] = useState(false)
   const [flashMatchId, setFlashMatchId] = useState<number | null>(null)
   const [view, setView] = useState<"group" | "date">("group")
+  const [todayOpen, setTodayOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -291,6 +292,14 @@ export function MatchesRealtime({
   const finished = allMatches.filter((m) => m.status === "finished").length
   const total = allMatches.length
 
+  const todayMatches = allMatches.filter((m) => {
+    const d = new Date(m.scheduled_at)
+    const now = new Date()
+    return d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+  }).sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
+
   // Vista por fecha: agrupar todos los partidos por día
   const byDate: Record<string, MatchWithTeams[]> = {}
   if (view === "date") {
@@ -308,6 +317,42 @@ export function MatchesRealtime({
 
   return (
     <div>
+      {/* Modal — juegos de hoy */}
+      {todayOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4"
+          onClick={() => setTodayOpen(false)}
+        >
+          <div
+            className="w-full sm:max-w-lg bg-card rounded-t-2xl sm:rounded-2xl border border-border/30 shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/20"
+              style={{ background: "rgba(239,68,68,0.08)" }}>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                <p className="font-bold text-foreground">
+                  Juegos de hoy · {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+              </div>
+              <button
+                onClick={() => setTodayOpen(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors w-8 h-8 flex items-center justify-center rounded-lg hover:bg-foreground/5"
+              >
+                ✕
+              </button>
+            </div>
+            {/* Match list */}
+            <div className="divide-y divide-border/10 overflow-y-auto" style={{ maxHeight: "70vh" }}>
+              {todayMatches.map((match) => (
+                <MatchRow key={match.id} match={match} flashMatchId={flashMatchId} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="font-display text-4xl font-bold text-foreground tracking-tight">⚽ PARTIDOS</h1>
@@ -325,6 +370,16 @@ export function MatchesRealtime({
           <div className="text-sm text-muted-foreground font-mono">
             <span className="text-emerald-400 font-bold">{finished}</span>/{total}
           </div>
+          {todayMatches.length > 0 && (
+            <button
+              onClick={() => setTodayOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110 animate-pulse"
+              style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+              Juegos de hoy
+            </button>
+          )}
           {/* View toggle */}
           <div className="flex rounded-lg overflow-hidden border border-border/20 text-xs">
             <button
