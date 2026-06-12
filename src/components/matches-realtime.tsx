@@ -203,7 +203,7 @@ function MatchRow({
       </div>
 
       <div className="flex items-center justify-between mt-1.5">
-        <span className="text-[11px] text-muted-foreground font-mono" suppressHydrationWarning>
+        <span className="text-[11px] text-muted-foreground font-mono">
           {date.toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
           {" · "}
           {date.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
@@ -282,7 +282,7 @@ export function MatchesRealtime({
   if (view === "date") {
     for (const m of allMatches) {
       const day = new Date(m.scheduled_at).toLocaleDateString("es-MX", {
-        weekday: "long", day: "numeric", month: "long", timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        weekday: "long", day: "numeric", month: "long",
       })
       if (!byDate[day]) byDate[day] = []
       byDate[day].push(m)
