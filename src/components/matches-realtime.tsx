@@ -292,16 +292,12 @@ export function MatchesRealtime({
   const finished = allMatches.filter((m) => m.status === "finished").length
   const total = allMatches.length
 
-  // Window: from UTC midnight today (catches overnight games ESPN shows as "today")
-  // through local midnight tonight (catches evening games like 8pm Panama = 1am UTC tomorrow)
-  const now = new Date()
-  const startUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-  const endLocal = new Date(now)
-  endLocal.setDate(endLocal.getDate() + 1)
-  endLocal.setHours(0, 0, 0, 0) // local midnight tomorrow expressed as UTC
   const todayMatches = allMatches.filter((m) => {
     const d = new Date(m.scheduled_at)
-    return d >= startUTC && d < endLocal
+    const now = new Date()
+    return d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
   }).sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
 
   // Vista por fecha: agrupar todos los partidos por día
