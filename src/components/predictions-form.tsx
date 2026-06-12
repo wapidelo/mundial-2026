@@ -369,12 +369,14 @@ function MatchCard({
   importedHome,
   importedAway,
   importKey,
+  onSave,
 }: {
   match: MatchWithPrediction
   disabled: boolean
   importedHome?: number
   importedAway?: number
   importKey: number
+  onSave?: () => void
 }) {
   const pred = match.prediction
   const hasResult = match.home_score !== null && match.away_score !== null
@@ -447,6 +449,19 @@ function MatchCard({
           </span>
         </div>
       )}
+
+      {!disabled && onSave && (
+        <div className="mt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={onSave}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all hover:brightness-110"
+            style={{ background: "rgba(99,102,241,0.12)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.2)" }}
+          >
+            💾 Guardar
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -491,16 +506,20 @@ function GroupSection({
         </div>
       </summary>
       <div className="p-4 grid gap-3 sm:grid-cols-2">
-        {group.matches.map((match) => (
-          <MatchCard
-            key={match.id}
-            match={match}
-            disabled={new Date(match.scheduled_at) <= now}
-            importedHome={importedPredictions[match.id]?.home}
-            importedAway={importedPredictions[match.id]?.away}
-            importKey={importKey}
-          />
-        ))}
+        {group.matches.map((match) => {
+          const matchDisabled = new Date(match.scheduled_at) <= now
+          return (
+            <MatchCard
+              key={match.id}
+              match={match}
+              disabled={matchDisabled}
+              importedHome={importedPredictions[match.id]?.home}
+              importedAway={importedPredictions[match.id]?.away}
+              importKey={importKey}
+              onSave={matchDisabled ? undefined : () => onSectionSave([match.id])}
+            />
+          )
+        })}
       </div>
       {hasOpenMatch && (
         <div className="px-4 pb-3 pt-0 flex justify-end">
@@ -560,6 +579,7 @@ function KnockoutSection({
             importedHome={importedPredictions[match.id]?.home}
             importedAway={importedPredictions[match.id]?.away}
             importKey={importKey}
+            onSave={disabled ? undefined : () => onSectionSave([match.id])}
           />
         ))}
       </div>
