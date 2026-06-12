@@ -507,7 +507,7 @@ function GroupSection({
       </summary>
       <div className="p-4 grid gap-3 sm:grid-cols-2">
         {group.matches.map((match) => {
-          const matchDisabled = new Date(match.scheduled_at) <= now
+          const matchDisabled = new Date(match.scheduled_at) <= now || match.home_score !== null
           return (
             <MatchCard
               key={match.id}
