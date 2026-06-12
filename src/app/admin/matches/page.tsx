@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { setBonusResult, assignTeamToMatch, toggleRound } from "@/lib/actions/admin"
 import { AdminMatchRow } from "@/components/admin-match-row"
+import { SyncButton } from "@/components/sync-button"
 import type { Match, Group, RoundType } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
@@ -59,12 +60,15 @@ export default async function AdminMatchesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">⚙️ Administrar Resultados</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Al guardar un resultado los puntos se recalculan automáticamente.{" "}
-          <span className="text-emerald-400 font-mono font-bold">{finished}/{allMatches.length}</span> partidos finalizados.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">⚙️ Administrar Resultados</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Al guardar un resultado los puntos se recalculan automáticamente.{" "}
+            <span className="text-emerald-400 font-mono font-bold">{finished}/{allMatches.length}</span> partidos finalizados.
+          </p>
+        </div>
+        <SyncButton />
       </div>
 
       {/* Phase control — open/close knockout rounds for predictions */}

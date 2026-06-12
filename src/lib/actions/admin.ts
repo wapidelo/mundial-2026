@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { CHAMPION_POINTS, THIRD_PLACE_POINTS } from "@/lib/scoring"
 import { sendMatchResultEmails } from "@/lib/email"
+import { syncTodayResults } from "@/lib/sync"
 
 async function assertAdmin() {
   const supabase = await createClient()
@@ -154,6 +155,15 @@ export async function toggleUserActive(formData: FormData) {
   revalidatePath("/admin/users")
   revalidatePath("/leaderboard")
 
+}
+
+export async function syncResults() {
+  await assertAdmin()
+  const result = await syncTodayResults()
+  revalidatePath("/admin/matches")
+  revalidatePath("/matches")
+  revalidatePath("/leaderboard")
+  return result
 }
 
 export async function toggleRound(formData: FormData) {
