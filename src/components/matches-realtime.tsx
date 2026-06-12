@@ -300,18 +300,18 @@ export function MatchesRealtime({
       d.getDate() === now.getDate()
   }).sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
 
-  // Vista por fecha: agrupar todos los partidos por día
+  // Vista por fecha: ordenar cronológicamente y agrupar por día
   const byDate: Record<string, MatchWithTeams[]> = {}
   if (view === "date") {
-    for (const m of allMatches) {
+    const sorted = [...allMatches].sort(
+      (a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime(),
+    )
+    for (const m of sorted) {
       const day = new Date(m.scheduled_at).toLocaleDateString("es-MX", {
         weekday: "long", day: "numeric", month: "long",
       })
       if (!byDate[day]) byDate[day] = []
       byDate[day].push(m)
-    }
-    for (const day of Object.keys(byDate)) {
-      byDate[day].sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
     }
   }
 
