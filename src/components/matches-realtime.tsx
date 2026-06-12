@@ -292,12 +292,13 @@ export function MatchesRealtime({
   const finished = allMatches.filter((m) => m.status === "finished").length
   const total = allMatches.length
 
+  // Use UTC dates to match ESPN's grouping (e.g. a 9pm Panama game = 2am UTC next day is still "today" on ESPN)
   const todayMatches = allMatches.filter((m) => {
     const d = new Date(m.scheduled_at)
     const now = new Date()
-    return d.getFullYear() === now.getFullYear() &&
-      d.getMonth() === now.getMonth() &&
-      d.getDate() === now.getDate()
+    return d.getUTCFullYear() === now.getUTCFullYear() &&
+      d.getUTCMonth() === now.getUTCMonth() &&
+      d.getUTCDate() === now.getUTCDate()
   }).sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
 
   // Vista por fecha: agrupar todos los partidos por día
