@@ -96,9 +96,10 @@ export async function syncTodayResults(): Promise<{
     const competition = e.competitions?.[0]
     if (!competition) continue
 
-    const statusName: string = competition.status?.type?.name ?? ""
-    // Only process finished matches
-    if (statusName !== "STATUS_FINAL") { skipped++; continue }
+    // Only process finished matches — ESPN uses STATUS_FULL_TIME, STATUS_FINAL,
+    // STATUS_FINAL_AET, etc.; the `completed` flag covers them all
+    const isCompleted: boolean = competition.status?.type?.completed === true
+    if (!isCompleted) { skipped++; continue }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const competitors: any[] = competition.competitors ?? []
