@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { setBonusResult, assignTeamToMatch, toggleRound } from "@/lib/actions/admin"
 import { AdminMatchRow } from "@/components/admin-match-row"
 import { SyncButton } from "@/components/sync-button"
+import { LocalDateTime } from "@/components/local-date"
 import type { Match, Group, RoundType } from "@/lib/types"
 
 export const dynamic = "force-dynamic"
@@ -195,7 +196,7 @@ export default async function AdminMatchesPage() {
                         style={{ background: "rgba(99,102,241,0.05)", borderBottom: "1px solid rgba(99,102,241,0.1)" }}>
                         <span className="text-xs font-mono text-muted-foreground shrink-0">
                           #{match.match_number} ·{" "}
-                          {new Date(match.scheduled_at).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                          <LocalDateTime iso={match.scheduled_at} options={{ day: "numeric", month: "short" }} />
                         </span>
 
                         {/* Home slot assignment */}

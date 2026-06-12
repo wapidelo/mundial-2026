@@ -388,7 +388,7 @@ function MatchCard({
       hasResult && "border-emerald-500/20 bg-emerald-500/5",
     )}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-muted-foreground font-medium">
+        <span className="text-xs text-muted-foreground font-medium" suppressHydrationWarning>
           #{match.match_number} · {new Date(match.scheduled_at).toLocaleDateString("es-MX", {
             day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
           })}
