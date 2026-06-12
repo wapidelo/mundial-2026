@@ -164,6 +164,11 @@ function MatchRow({
   const isFinished = match.status === "finished"
   const isFlashing = match.id === flashMatchId
   const date = new Date(match.scheduled_at)
+  const today = new Date()
+  const isToday =
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
 
   return (
     <div
@@ -208,15 +213,24 @@ function MatchRow({
           {" · "}
           {date.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
         </span>
-        <span className={cn(
-          "text-[10px] font-semibold px-2 py-0.5 rounded-full",
-          isFinished
-            ? "bg-emerald-500/15 text-emerald-400"
-            : "bg-foreground/5 text-muted-foreground/60",
-          isFlashing && "bg-emerald-500/30 text-emerald-300",
-        )}>
-          {isFlashing ? "¡Nuevo! 🎉" : isFinished ? "Finalizado" : "Por jugar"}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {isToday && !isFinished && (
+            <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse"
+              style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+              HOY
+            </span>
+          )}
+          <span className={cn(
+            "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+            isFinished
+              ? "bg-emerald-500/15 text-emerald-400"
+              : "bg-foreground/5 text-muted-foreground/60",
+            isFlashing && "bg-emerald-500/30 text-emerald-300",
+          )}>
+            {isFlashing ? "¡Nuevo! 🎉" : isFinished ? "Finalizado" : "Por jugar"}
+          </span>
+        </div>
       </div>
     </div>
   )
