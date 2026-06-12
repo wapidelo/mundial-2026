@@ -353,10 +353,17 @@ export function MatchesRealtime({
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-4">
-        <div>
+      <div className="mb-4">
+        {/* Row 1: title + counter */}
+        <div className="flex items-center justify-between">
           <h1 className="font-display text-4xl font-bold text-foreground tracking-tight">⚽ PARTIDOS</h1>
-          <div className="flex items-center gap-1.5 mt-1">
+          <div className="text-sm text-muted-foreground font-mono">
+            <span className="text-emerald-400 font-bold">{finished}</span>/{total}
+          </div>
+        </div>
+        {/* Row 2: realtime indicator + action buttons */}
+        <div className="flex items-center justify-between mt-2 gap-2">
+          <div className="flex items-center gap-1.5">
             <span className={cn(
               "w-2 h-2 rounded-full transition-colors duration-500",
               connected ? "bg-emerald-400 animate-pulse" : "bg-muted-foreground/40",
@@ -365,41 +372,38 @@ export function MatchesRealtime({
               {connected ? "En tiempo real" : "Conectando..."}
             </p>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-sm text-muted-foreground font-mono">
-            <span className="text-emerald-400 font-bold">{finished}</span>/{total}
-          </div>
-          {todayMatches.length > 0 && (
-            <button
-              onClick={() => setTodayOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110 animate-pulse"
-              style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-              Juegos de hoy
-            </button>
-          )}
-          {/* View toggle */}
-          <div className="flex rounded-lg overflow-hidden border border-border/20 text-xs">
-            <button
-              onClick={() => setView("group")}
-              className={cn(
-                "px-3 py-1.5 font-medium transition-colors",
-                view === "group" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-foreground/5",
-              )}
-            >
-              Grupo
-            </button>
-            <button
-              onClick={() => setView("date")}
-              className={cn(
-                "px-3 py-1.5 font-medium transition-colors border-l border-border/20",
-                view === "date" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-foreground/5",
-              )}
-            >
-              Fecha
-            </button>
+          <div className="flex items-center gap-2">
+            {todayMatches.length > 0 && (
+              <button
+                onClick={() => setTodayOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:brightness-110"
+                style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse inline-block" />
+                Juegos de hoy
+              </button>
+            )}
+            {/* View toggle */}
+            <div className="flex rounded-lg overflow-hidden border border-border/20 text-xs">
+              <button
+                onClick={() => setView("group")}
+                className={cn(
+                  "px-3 py-1.5 font-medium transition-colors",
+                  view === "group" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-foreground/5",
+                )}
+              >
+                Grupo
+              </button>
+              <button
+                onClick={() => setView("date")}
+                className={cn(
+                  "px-3 py-1.5 font-medium transition-colors border-l border-border/20",
+                  view === "date" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-foreground/5",
+                )}
+              >
+                Fecha
+              </button>
+            </div>
           </div>
         </div>
       </div>
