@@ -39,11 +39,11 @@ export function TodayMatchesButton({ matches }: { matches: MatchWithTeams[] }) {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm px-0 sm:px-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full sm:max-w-lg bg-card rounded-t-2xl sm:rounded-2xl border border-border/30 shadow-2xl overflow-hidden"
+            className="w-full sm:max-w-lg bg-card rounded-2xl border border-border/30 shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div
