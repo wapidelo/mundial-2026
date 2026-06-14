@@ -71,22 +71,30 @@ export async function syncTodayResults(): Promise<{
   errors: string[]
 }> {
   const now = new Date()
-  const todayStr = now.toISOString().slice(0, 10).replace(/-/g, "")
-  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-  const yesterdayStr = yesterday.toISOString().slice(0, 10).replace(/-/g, "")
+  // ESPN groups matches by US local date, which can be up to 2 UTC days behind.
+  // Fetch the last 3 UTC days to guarantee no finished match is missed.
+  const dateStrs = [0, 1, 2].map((daysAgo) => {
+    const d = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000)
+    return d.toISOString().slice(0, 10).replace(/-/g, "")
+  })
 
-  // Fetch both today and yesterday so matches that finished late UTC are not missed
-  const [todayRes, yesterdayRes] = await Promise.all([
-    fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${todayStr}`, { cache: "no-store" }),
-    fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${yesterdayStr}`, { cache: "no-store" }),
-  ])
-  if (!todayRes.ok) throw new Error(`ESPN API error: ${todayRes.status}`)
+  const responses = await Promise.all(
+    dateStrs.map((d) =>
+      fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${d}`, { cache: "no-store" }),
+    ),
+  )
+  if (!responses[0].ok) throw new Error(`ESPN API error: ${responses[0].status}`)
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const todayData: any = await todayRes.json()
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const yesterdayData: any = yesterdayRes.ok ? await yesterdayRes.json() : { events: [] }
-  const events: unknown[] = [...(yesterdayData.events ?? []), ...(todayData.events ?? [])]
+  const events: unknown[] = (
+    await Promise.all(
+      responses.map(async (r) => {
+        if (!r.ok) return []
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: any = await r.json()
+        return data.events ?? []
+      }),
+    )
+  ).flat()
 
   const service = createServiceClient()
   const { data: teams } = await service.from("teams").select("id, name")
