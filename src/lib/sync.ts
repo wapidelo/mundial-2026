@@ -53,6 +53,8 @@ const ESPN_TO_DB: Record<string, string> = {
   "Sweden": "Suecia",
   "Switzerland": "Suiza",
   "Turkey": "Turquía",
+  "Türkiye": "Turquía",
+  "Scotland": "Escocia",
   "Tunisia": "Túnez",
   "Uruguay": "Uruguay",
   "Uzbekistan": "Uzbekistán",
