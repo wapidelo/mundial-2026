@@ -68,18 +68,23 @@ export async function syncTodayResults(): Promise<{
   unmatched: string[]
   errors: string[]
 }> {
-  const today = new Date()
-  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "")
+  const now = new Date()
+  const todayStr = now.toISOString().slice(0, 10).replace(/-/g, "")
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  const yesterdayStr = yesterday.toISOString().slice(0, 10).replace(/-/g, "")
 
-  const res = await fetch(
-    `https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${dateStr}`,
-    { cache: "no-store" },
-  )
-  if (!res.ok) throw new Error(`ESPN API error: ${res.status}`)
+  // Fetch both today and yesterday so matches that finished late UTC are not missed
+  const [todayRes, yesterdayRes] = await Promise.all([
+    fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${todayStr}`, { cache: "no-store" }),
+    fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=${yesterdayStr}`, { cache: "no-store" }),
+  ])
+  if (!todayRes.ok) throw new Error(`ESPN API error: ${todayRes.status}`)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const data: any = await res.json()
-  const events: unknown[] = data.events ?? []
+  const todayData: any = await todayRes.json()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const yesterdayData: any = yesterdayRes.ok ? await yesterdayRes.json() : { events: [] }
+  const events: unknown[] = [...(yesterdayData.events ?? []), ...(todayData.events ?? [])]
 
   const service = createServiceClient()
   const { data: teams } = await service.from("teams").select("id, name")
