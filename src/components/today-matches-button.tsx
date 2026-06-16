@@ -1,12 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { MatchRow, type MatchWithTeams } from "@/components/matches-realtime"
+import { MatchRow, type MatchWithTeams, type LiveData } from "@/components/matches-realtime"
 
 export function TodayMatchesButton({ matches }: { matches: MatchWithTeams[] }) {
   const [open, setOpen] = useState(false)
-  // Filled after mount so server (UTC) and browser (local) never disagree
   const [todayMatches, setTodayMatches] = useState<MatchWithTeams[]>([])
+  const [liveScores, setLiveScores] = useState<Map<string, LiveData>>(new Map())
 
   useEffect(() => {
     const now = new Date()
@@ -23,6 +23,25 @@ export function TodayMatchesButton({ matches }: { matches: MatchWithTeams[] }) {
         .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime()),
     )
   }, [matches])
+
+  useEffect(() => {
+    if (!open) return
+    async function fetchLive() {
+      try {
+        const res = await fetch("/api/live-scores")
+        if (!res.ok) return
+        const data = await res.json()
+        const map = new Map<string, LiveData>()
+        for (const m of data.matches) {
+          map.set(`${m.homeTeam}|${m.awayTeam}`, m)
+        }
+        setLiveScores(map)
+      } catch {}
+    }
+    fetchLive()
+    const timer = setInterval(fetchLive, 30_000)
+    return () => clearInterval(timer)
+  }, [open])
 
   if (todayMatches.length === 0) return null
 
@@ -65,7 +84,16 @@ export function TodayMatchesButton({ matches }: { matches: MatchWithTeams[] }) {
             </div>
             <div className="divide-y divide-border/10 overflow-y-auto" style={{ maxHeight: "70vh" }}>
               {todayMatches.map((match) => (
-                <MatchRow key={match.id} match={match} flashMatchId={null} />
+                <MatchRow
+                  key={match.id}
+                  match={match}
+                  flashMatchId={null}
+                  liveData={
+                    match.home_team && match.away_team
+                      ? liveScores.get(`${match.home_team.name}|${match.away_team.name}`)
+                      : undefined
+                  }
+                />
               ))}
             </div>
           </div>

@@ -1,68 +1,7 @@
 "use server"
 
 import { createServiceClient } from "@/lib/supabase/server"
-
-// ESPN English display names → Spanish names in our DB
-const ESPN_TO_DB: Record<string, string> = {
-  "Mexico": "México",
-  "South Africa": "Sudáfrica",
-  "South Korea": "Corea del Sur",
-  "Czechia": "Chequia",
-  "Czech Republic": "Chequia",
-  "Canada": "Canadá",
-  "Bosnia-Herzegovina": "Bosnia y Herzegovina",
-  "Bosnia and Herzegovina": "Bosnia y Herzegovina",
-  "Brazil": "Brasil",
-  "Morocco": "Marruecos",
-  "United States": "Estados Unidos",
-  "Germany": "Alemania",
-  "Curaçao": "Curazao",
-  "Curacao": "Curazao",
-  "Netherlands": "Países Bajos",
-  "Japan": "Japón",
-  "Belgium": "Bélgica",
-  "Egypt": "Egipto",
-  "Spain": "España",
-  "Cape Verde": "Cabo Verde",
-  "France": "Francia",
-  "Algeria": "Argelia",
-  "DR Congo": "Congo RD",
-  "Congo DR": "Congo RD",
-  "England": "Inglaterra",
-  "Croatia": "Croacia",
-  "Saudi Arabia": "Arabia Saudita",
-  "Australia": "Australia",
-  "Austria": "Austria",
-  "Colombia": "Colombia",
-  "Ivory Coast": "Costa de Marfil",
-  "Côte d'Ivoire": "Costa de Marfil",
-  "Ecuador": "Ecuador",
-  "Ghana": "Ghana",
-  "Haiti": "Haití",
-  "Iraq": "Iraq",
-  "Iran": "Irán",
-  "Jordan": "Jordania",
-  "Norway": "Noruega",
-  "New Zealand": "Nueva Zelanda",
-  "Panama": "Panamá",
-  "Qatar": "Qatar",
-  "Senegal": "Senegal",
-  "Argentina": "Argentina",
-  "Paraguay": "Paraguay",
-  "Portugal": "Portugal",
-  "Sweden": "Suecia",
-  "Switzerland": "Suiza",
-  "Turkey": "Turquía",
-  "Türkiye": "Turquía",
-  "Scotland": "Escocia",
-  "Tunisia": "Túnez",
-  "Uruguay": "Uruguay",
-  "Uzbekistan": "Uzbekistán",
-}
-
-function toDbName(espnName: string): string {
-  return ESPN_TO_DB[espnName] ?? espnName
-}
+import { toDbName } from "@/lib/espn-names"
 
 export async function syncTodayResults(): Promise<{
   updated: number

@@ -12,6 +12,14 @@ export type MatchWithTeams = Match & {
   away_slot: string | null
 }
 
+export type LiveData = {
+  homeScore: number
+  awayScore: number
+  clock: string
+  period: number
+  isHalfTime: boolean
+}
+
 type GroupWithMatches = Group & { matches: MatchWithTeams[] }
 
 // ─── Standings ────────────────────────────────────────────────────────────────
@@ -157,11 +165,14 @@ const KNOCKOUT_ORDER: RoundType[] = ["round_of_32", "round_of_16", "quarter_fina
 export function MatchRow({
   match,
   flashMatchId,
+  liveData,
 }: {
   match: MatchWithTeams
   flashMatchId: number | null
+  liveData?: LiveData
 }) {
   const isFinished = match.status === "finished"
+  const isLive = !!liveData
   const isFlashing = match.id === flashMatchId
   const date = new Date(match.scheduled_at)
   const today = new Date()
@@ -175,6 +186,7 @@ export function MatchRow({
       className={cn(
         "px-4 py-3 transition-colors duration-700",
         isFinished && "bg-emerald-500/5",
+        isLive && !isFinished && "bg-emerald-500/5",
         isFlashing && "bg-emerald-500/20",
       )}
     >
@@ -187,7 +199,11 @@ export function MatchRow({
         </div>
 
         <div className="shrink-0 w-20 text-center">
-          {isFinished ? (
+          {isLive && !isFinished ? (
+            <span className="text-xl font-black font-mono" style={{ color: "#34d399" }}>
+              {liveData.homeScore}—{liveData.awayScore}
+            </span>
+          ) : isFinished ? (
             <span
               className="text-xl font-black font-mono text-foreground"
               style={isFlashing ? { animation: "scoreFlash 0.6s ease-out", color: "#34d399" } : undefined}
@@ -214,7 +230,16 @@ export function MatchRow({
           {date.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
         </span>
         <div className="flex items-center gap-1.5">
-          {isToday && !isFinished && (
+          {isLive && !isFinished && (
+            <span
+              className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: "rgba(52,211,153,0.15)", color: "#34d399", border: "1px solid rgba(52,211,153,0.3)" }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+              {liveData.isHalfTime ? "Medio tiempo" : `${liveData.clock} · T${liveData.period}`}
+            </span>
+          )}
+          {isToday && !isFinished && !isLive && (
             <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse"
               style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}>
               <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
@@ -225,10 +250,12 @@ export function MatchRow({
             "text-[10px] font-semibold px-2 py-0.5 rounded-full",
             isFinished
               ? "bg-emerald-500/15 text-emerald-400"
+              : isLive
+              ? "bg-emerald-500/15 text-emerald-400 animate-pulse"
               : "bg-foreground/5 text-muted-foreground/60",
             isFlashing && "bg-emerald-500/30 text-emerald-300",
           )}>
-            {isFlashing ? "¡Nuevo! 🎉" : isFinished ? "Finalizado" : "Por jugar"}
+            {isFlashing ? "¡Nuevo! 🎉" : isFinished ? "Finalizado" : isLive ? "En vivo" : "Por jugar"}
           </span>
         </div>
       </div>
@@ -249,6 +276,7 @@ export function MatchesRealtime({
   const [flashMatchId, setFlashMatchId] = useState<number | null>(null)
   const [view, setView] = useState<"group" | "date">("group")
   const [todayOpen, setTodayOpen] = useState(false)
+  const [liveScores, setLiveScores] = useState<Map<string, LiveData>>(new Map())
 
   useEffect(() => {
     const supabase = createClient()
@@ -286,6 +314,25 @@ export function MatchesRealtime({
 
     return () => { supabase.removeChannel(channel) }
   }, [])
+
+  useEffect(() => {
+    if (!todayOpen) return
+    async function fetchLive() {
+      try {
+        const res = await fetch("/api/live-scores")
+        if (!res.ok) return
+        const data = await res.json()
+        const map = new Map<string, LiveData>()
+        for (const m of data.matches) {
+          map.set(`${m.homeTeam}|${m.awayTeam}`, m)
+        }
+        setLiveScores(map)
+      } catch {}
+    }
+    fetchLive()
+    const timer = setInterval(fetchLive, 30_000)
+    return () => clearInterval(timer)
+  }, [todayOpen])
 
   const allGroupMatches = groups.flatMap((g) => g.matches)
   const allMatches = [...allGroupMatches, ...knockouts]
@@ -346,7 +393,16 @@ export function MatchesRealtime({
             {/* Match list */}
             <div className="divide-y divide-border/10 overflow-y-auto" style={{ maxHeight: "70vh" }}>
               {todayMatches.map((match) => (
-                <MatchRow key={match.id} match={match} flashMatchId={flashMatchId} />
+                <MatchRow
+                  key={match.id}
+                  match={match}
+                  flashMatchId={flashMatchId}
+                  liveData={
+                    match.home_team && match.away_team
+                      ? liveScores.get(`${match.home_team.name}|${match.away_team.name}`)
+                      : undefined
+                  }
+                />
               ))}
             </div>
           </div>
