@@ -5,6 +5,7 @@ import { toDbName } from "@/lib/espn-names"
 
 export async function syncTodayResults(): Promise<{
   updated: number
+  advanced: number
   skipped: number
   unmatched: string[]
   errors: string[]
@@ -40,6 +41,7 @@ export async function syncTodayResults(): Promise<{
   const teamByName = new Map<string, number>(teams?.map((t) => [t.name, t.id]) ?? [])
 
   let updated = 0
+  let advanced = 0
   let skipped = 0
   const unmatched: string[] = []
   const errors: string[] = []
@@ -77,10 +79,10 @@ export async function syncTodayResults(): Promise<{
       continue
     }
 
-    // Find match regardless of home/away order in our DB
+    // Include match_number and round so we can advance the bracket
     const { data: match } = await service
       .from("matches")
-      .select("id, home_team_id, away_team_id, home_score, away_score, status")
+      .select("id, match_number, round, home_team_id, away_team_id, home_score, away_score, status")
       .or(
         `and(home_team_id.eq.${teamAId},away_team_id.eq.${teamBId}),and(home_team_id.eq.${teamBId},away_team_id.eq.${teamAId})`,
       )
@@ -113,10 +115,44 @@ export async function syncTodayResults(): Promise<{
 
     if (error) {
       errors.push(`Match ${match.id}: ${error.message}`)
-    } else {
-      updated++
+      continue
+    }
+
+    updated++
+
+    // ── Auto-avance de bracket para rondas eliminatorias ──────────────────────
+    if (match.round !== "group" && match.home_team_id && match.away_team_id) {
+      // ESPN sets competitor.winner = true on the winning team.
+      // This handles draws resolved by AET/penalties correctly.
+      // Fall back to score comparison only if the field is absent.
+      const espnHomeWins: boolean =
+        espnHome.winner === true ? true :
+        espnAway.winner === true ? false :
+        espnHomeScore > espnAwayScore
+
+      // Map ESPN perspective (home/away) → our DB perspective
+      const dbHomeWins = ourHomeIsEspnHome ? espnHomeWins : !espnHomeWins
+      const winnerTeamId = dbHomeWins ? match.home_team_id : match.away_team_id
+      const loserTeamId  = dbHomeWins ? match.away_team_id : match.home_team_id
+
+      const winnerSlot = `W Partido ${match.match_number}`
+      const loserSlot  = `L Partido ${match.match_number}` // solo para el partido de 3er lugar
+
+      const advOps = await Promise.all([
+        service.from("matches").update({ home_team_id: winnerTeamId }).eq("home_slot", winnerSlot),
+        service.from("matches").update({ away_team_id: winnerTeamId }).eq("away_slot", winnerSlot),
+        service.from("matches").update({ home_team_id: loserTeamId  }).eq("home_slot", loserSlot),
+        service.from("matches").update({ away_team_id: loserTeamId  }).eq("away_slot", loserSlot),
+      ])
+
+      const advErrors = advOps.flatMap((r) => r.error ? [r.error.message] : [])
+      if (advErrors.length) {
+        errors.push(`Advance M${match.match_number}: ${advErrors.join(", ")}`)
+      } else {
+        advanced++
+      }
     }
   }
 
-  return { updated, skipped, unmatched, errors }
+  return { updated, advanced, skipped, unmatched, errors }
 }
