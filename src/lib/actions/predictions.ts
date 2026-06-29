@@ -78,10 +78,9 @@ export async function savePredictions(formData: FormData) {
     finalPredictions = predictionsToUpsert.filter((p) => {
       const match = matchRows?.find((m) => m.id === p.match_id)
       if (!match) return false
-      if ((match.round as string) === "group") {
-        // Allow group predictions as long as the match hasn't started yet
-        return new Date(match.scheduled_at as string) > now
-      }
+      // Block predictions for any match that has already started, regardless of round
+      if (new Date(match.scheduled_at as string) <= now) return false
+      if ((match.round as string) === "group") return true
       return openRounds.includes(match.round as string)
     })
     if (finalPredictions.length === 0) throw new Error("Las predicciones están cerradas para esos partidos")

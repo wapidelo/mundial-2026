@@ -165,7 +165,7 @@ function ExcelImportModal({
         })),
     )
     const openKnockout = knockoutMatches
-      .filter((m) => openRounds.includes(m.round))
+      .filter((m) => openRounds.includes(m.round) && new Date(m.scheduled_at) > now)
       .map((m) => ({
         match_number: m.match_number,
         home_name: m.home_team?.name ?? m.home_slot ?? "TBD",
@@ -571,23 +571,30 @@ function KnockoutSection({
         </div>
       </summary>
       <div className="p-4 grid gap-3 sm:grid-cols-2">
-        {matches.map((match) => (
-          <MatchCard
-            key={match.id}
-            match={match}
-            disabled={disabled}
-            importedHome={importedPredictions[match.id]?.home}
-            importedAway={importedPredictions[match.id]?.away}
-            importKey={importKey}
-            onSave={disabled ? undefined : () => onSectionSave([match.id])}
-          />
-        ))}
+        {matches.map((match) => {
+          const now = new Date()
+          const matchDisabled = disabled || new Date(match.scheduled_at) <= now || match.home_score !== null
+          return (
+            <MatchCard
+              key={match.id}
+              match={match}
+              disabled={matchDisabled}
+              importedHome={importedPredictions[match.id]?.home}
+              importedAway={importedPredictions[match.id]?.away}
+              importKey={importKey}
+              onSave={matchDisabled ? undefined : () => onSectionSave([match.id])}
+            />
+          )
+        })}
       </div>
       {!disabled && (
         <div className="px-4 pb-3 pt-0 flex justify-end">
           <button
             type="button"
-            onClick={() => onSectionSave(matches.map((m) => m.id))}
+            onClick={() => {
+              const now = new Date()
+              onSectionSave(matches.filter((m) => new Date(m.scheduled_at) > now && m.home_score === null).map((m) => m.id))
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:brightness-110"
             style={{ background: "rgba(99,102,241,0.2)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.3)" }}
           >
