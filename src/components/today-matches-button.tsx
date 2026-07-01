@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react"
 import { MatchRow, type MatchWithTeams, type LiveData } from "@/components/matches-realtime"
 
-export function TodayMatchesButton({ matches }: { matches: MatchWithTeams[] }) {
+export function TodayMatchesButton({
+  matches,
+  predictedMatchIds = [],
+}: {
+  matches: MatchWithTeams[]
+  predictedMatchIds?: number[]
+}) {
   const [open, setOpen] = useState(false)
   const [todayMatches, setTodayMatches] = useState<MatchWithTeams[]>([])
   const [liveScores, setLiveScores] = useState<Map<string, LiveData>>(new Map())
@@ -45,6 +51,11 @@ export function TodayMatchesButton({ matches }: { matches: MatchWithTeams[] }) {
 
   if (todayMatches.length === 0) return null
 
+  const now = new Date()
+  const pendingCount = todayMatches.filter(
+    (m) => m.status !== "finished" && new Date(m.scheduled_at) > now && !predictedMatchIds.includes(m.id),
+  ).length
+
   return (
     <>
       <button
@@ -53,7 +64,17 @@ export function TodayMatchesButton({ matches }: { matches: MatchWithTeams[] }) {
         style={{ background: "rgba(239,68,68,0.15)", color: "#f87171", border: "1px solid rgba(239,68,68,0.3)" }}
       >
         <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse inline-block" />
-        Juegos de hoy ({todayMatches.length})
+        <span>
+          Juegos de hoy ({todayMatches.length})
+          {pendingCount > 0 && (
+            <span
+              className="ml-2 px-1.5 py-0.5 rounded-md text-xs font-bold"
+              style={{ background: "rgba(251,191,36,0.2)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.35)" }}
+            >
+              {pendingCount} sin predecir
+            </span>
+          )}
+        </span>
       </button>
 
       {open && (

@@ -15,6 +15,8 @@ export default async function HomePage() {
   const windowStart = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
   const windowEnd = new Date(Date.now() + 48 * 3600 * 1000).toISOString()
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const [{ count: playerCount }, { count: predictionCount }, { count: matchCount }, { data: nearbyMatches }] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("predictions").select("*", { count: "exact", head: true }),
@@ -26,6 +28,16 @@ export default async function HomePage() {
       .lte("scheduled_at", windowEnd)
       .order("scheduled_at"),
   ])
+
+  let predictedMatchIds: number[] = []
+  if (user && nearbyMatches && nearbyMatches.length > 0) {
+    const { data: preds } = await supabase
+      .from("predictions")
+      .select("match_id")
+      .eq("user_id", user.id)
+      .in("match_id", nearbyMatches.map((m) => m.id))
+    predictedMatchIds = preds?.map((p) => p.match_id) ?? []
+  }
 
   const tournamentStart = process.env.TOURNAMENT_START ?? "2026-06-11T19:00:00Z"
 
@@ -86,7 +98,7 @@ export default async function HomePage() {
                 🎯 Mis predicciones
               </Button>
             </Link>
-            <TodayMatchesButton matches={(nearbyMatches ?? []) as MatchWithTeams[]} />
+            <TodayMatchesButton matches={(nearbyMatches ?? []) as MatchWithTeams[]} predictedMatchIds={predictedMatchIds} />
             <Link href="/estadisticas">
               <Button size="lg" variant="outline"
                 className="font-semibold h-12 text-base">
